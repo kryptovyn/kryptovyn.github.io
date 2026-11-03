@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Claw Pop</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="loading"><div class="brand">CLAW<br>POP</div><div class="bar"><i id="loadbar"></i></div></div>
+
+<div id="vignette"></div><div id="beam"></div>
+<div id="hud" class="hide">
+  <div class="stats"><b id="doorText"></b><span class="cn"><span class="coin"></span><i id="coinText">0</i></span><span class="clock" id="clock"></span></div>
+  <div class="tools" id="tools"></div>
+  <div class="qte hide" id="qte"><b id="qteText"></b><div class="qbar"><i id="qteBar"></i></div></div>
+  <div class="time" id="time">12</div>
+  <button class="round" id="pauseBtn" aria-label="Pause"><span class="ico-pause"></span></button>
+  <div class="got" id="got"></div>
+  <div class="banner" id="banner"></div>
+  <div class="hint" id="hint"></div>
+  <div class="stick" id="stick"><span class="ar u"></span><span class="ar d"></span><span class="ar l"></span><span class="ar r"></span><i id="knob"></i></div>
+  <button class="drop" id="dropBtn"></button>
+</div>
+<div id="card" class="hide"><div class="cardIn"><em id="cardNew"></em><img id="cardImg" alt=""><b id="cardRarity"></b><span class="gain"><span class="coin"></span><i id="cardCoins"></i></span></div></div>
+
+<section id="title" class="screen hide">
+  <div class="gold"><span class="coin"></span><b id="coinsTitle">0</b></div>
+  <div class="machinePick">
+    <div class="machine"><b id="mName"></b><small id="mInfo"></small></div>
+  </div>
+  <button class="go pulse" id="playBtn"></button>
+  <div class="row">
+    <button class="sub" id="bookBtn"></button>
+    <button class="round" id="setBtn" aria-label="Settings"><span class="ico-gear"></span></button>
+  </div>
+</section>
+
+<section id="result" class="screen hide">
+  <h2 id="resTitle"></h2>
+  <div class="prizes" id="resPrizes"></div>
+  <div class="gain"><span class="coin"></span><b id="resCoins">0</b></div>
+  <div class="row">
+    <button class="sub ad" id="moreBtn"></button>
+    <button class="sub ad" id="doubleBtn"></button>
+  </div>
+  <div id="resUp" class="upgrades"></div>
+  <button class="go" id="againBtn"></button>
+  <button class="sub ghost" id="homeBtn"></button>
+</section>
+
+<section id="panel" class="screen hide">
+  <h2 id="panelTitle"></h2>
+  <div class="gold"><span class="coin"></span><b id="coinsPanel">0</b></div>
+  <div id="panelBody"></div>
+  <button class="go" id="panelClose"></button>
+</section>
+
+<section id="pause" class="screen hide">
+  <h2 id="pauseTitle"></h2>
+  <button class="go" id="resumeBtn"></button>
+  <button class="sub" id="quitBtn"></button>
+</section>
+
+<script>
+(function () {
+  var started = false
+  function go() { if (started) return; started = true; var s = document.createElement('script'); s.type = 'module'; s.src = 'game.js'; document.body.appendChild(s) }
+  if (/[?&]nobridge/.test(location.search)) { window.__noBridge = true; go(); return }
+  function local() { var s = document.createElement('script'); s.src = 'playgama-bridge.js'; s.onload = go; s.onerror = go; document.head.appendChild(s) }
+  var cdn = document.createElement('script'), done = false
+  var timer = setTimeout(function () { if (!done) { done = true; local() } }, 2000)
+  cdn.src = 'https://bridge.playgama.com/v2/stable/playgama-bridge.js'
+  cdn.onload = function () { if (!done) { done = true; clearTimeout(timer); go() } }
+  cdn.onerror = function () { if (!done) { done = true; clearTimeout(timer); local() } }
+  document.head.appendChild(cdn)
+})()
+</script>
+</body>
+</html>
