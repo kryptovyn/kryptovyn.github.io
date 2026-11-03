@@ -12,16 +12,16 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)]
 
 // ---------------------------------------------------------------- text
 const TEXT = {
-  en: { play: 'PLAY', again: 'PLAY AGAIN', home: 'Shop', settings: 'Settings', close: 'Close', paused: 'Paused', resume: 'Resume', quit: 'Leave machine', music: 'Music', sfx: 'Sound', shake: 'Vibration', language: 'Language', on: 'On', off: 'Off', drop: 'DROP', tries: 'TRIES', upgrades: 'Upgrades', book: 'Collection', got: 'GOT IT!', close1: 'SO CLOSE!', miss: 'MISS', fresh: 'NEW!', common: 'Common', rare: 'Shiny', legend: 'Golden', unlock: 'Unlock', result: 'Prizes', none: 'No prize this time...', more: '+3 tries', double: 'Coins x2', aim: 'Drag to move the claw, then DROP', max: 'MAX', lvl: 'Lv', upGrip: 'Grip', upGripD: 'Claw holds tighter', upTries: 'Tries', upTriesD: '+1 try per game', upMagnet: 'Aim help', upMagnetD: 'Off-center grabs hold', upLuck: 'Luck', upLuckD: 'More shiny & golden', m0: 'Bear Party', m1: 'Hero Plush', m2: 'Keychains', m3: 'Capsules', m4: 'Giant Plush', m5: 'Golden Claw', start: "ESCAPE", story: "Locked in the claw shop at 3 AM. Open 6 doors before dawn.", door: "DOOR", keyHint: "Catch the plush with the key!", opened: "DOOR OPEN!", escaped: "ESCAPED!", failDawn: "The sun came up...", failCoins: "Out of coins...", best: "Best", farthest: "Farthest", timeL: "Time", hold: "HOLD ON! TAP!", tap: "TAP!", saved: "SAVED!", blackout: "BLACKOUT!", guard: "GUARD! FREEZE!", spotted: "SPOTTED! -3", quake: "SHAKING!", toolPick: "Pick a tool", cont: "+10 coins & continue", contT: "+2 min & continue", retry: "TRY AGAIN", newBest: "NEW RECORD!", tMagnet: "Magnet", tMagnetD: "Next grab never slips", tHammer: "Hammer", tHammerD: "Tap to shake the pile", tSticky: "Sticky claw", tStickyD: "3 grabs hold tighter", tLight: "Flashlight", tLightD: "See in blackouts", tWallet: "Wallet", tWalletD: "+6 coins now", tWatch: "Stopwatch", tWatchD: "+90 s before dawn" },
-  ko: { play: '뽑기 시작', again: '한 번 더', home: '가게로', settings: '설정', close: '닫기', paused: '일시정지', resume: '계속', quit: '기계에서 나가기', music: '배경음', sfx: '효과음', shake: '진동', language: '언어', on: '켬', off: '끔', drop: '내려!', tries: '남은 판', upgrades: '강화', book: '도감', got: '뽑았다!', close1: '아깝다!', miss: '꽝', fresh: 'NEW!', common: '보통', rare: '반짝', legend: '황금', unlock: '열기', result: '뽑은 인형', none: '이번엔 꽝...', more: '+3판 더', double: '코인 2배', aim: '끌어서 좌우 · 앞뒤로 맞추고 내려!', max: '최대', lvl: 'Lv', upGrip: '집게 힘', upGripD: '더 꽉 잡는다', upTries: '판 수', upTriesD: '한 게임에 +1판', upMagnet: '조준 보정', upMagnetD: '살짝 빗나가도 잡는다', upLuck: '행운', upLuckD: '반짝 · 황금이 더 자주', m0: '곰돌이 파티', m1: '영웅 인형', m2: '열쇠고리', m3: '캡슐 뽑기', m4: '왕 큰 인형', m5: '황금 집게', start: "탈출 시작", story: "새벽 3시, 뽑기방에 갇혔다. 동트기 전에 문 6개를 열어라.", door: "문", keyHint: "열쇠 인형을 뽑아라!", opened: "문이 열렸다!", escaped: "탈출 성공!", failDawn: "날이 밝았다...", failCoins: "코인이 다 떨어졌다...", best: "최고 기록", farthest: "가장 멀리", timeL: "시간", hold: "꽉 잡아! 연타!", tap: "연타!", saved: "버텼다!", blackout: "정전!", guard: "경비다! 멈춰!", spotted: "들켰다! -3", quake: "흔들린다!", toolPick: "도구를 골라", cont: "+10코인으로 이어하기", contT: "+2분으로 이어하기", retry: "다시 도전", newBest: "신기록!", tMagnet: "자석", tMagnetD: "다음 한 번은 안 놓친다", tHammer: "망치", tHammerD: "눌러서 더미 흔들기", tSticky: "끈끈이 집게", tStickyD: "3번 동안 더 꽉", tLight: "손전등", tLightD: "정전에도 보인다", tWallet: "동전 지갑", tWalletD: "지금 코인 +6", tWatch: "멈춘 시계", tWatchD: "동트기까지 +90초" },
-  es: { play: 'JUGAR', again: 'OTRA VEZ', home: 'Tienda', settings: 'Ajustes', close: 'Cerrar', paused: 'Pausa', resume: 'Seguir', quit: 'Salir de la máquina', music: 'Música', sfx: 'Sonido', shake: 'Vibración', language: 'Idioma', on: 'Sí', off: 'No', drop: '¡BAJA!', tries: 'INTENTOS', upgrades: 'Mejoras', book: 'Colección', got: '¡LO TENGO!', close1: '¡CASI!', miss: 'FALLO', fresh: '¡NUEVO!', common: 'Común', rare: 'Brillante', legend: 'Dorado', unlock: 'Abrir', result: 'Premios', none: 'Esta vez nada...', more: '+3 intentos', double: 'Monedas x2', aim: 'Arrastra para mover la garra y BAJA', max: 'MÁX', lvl: 'Nv', upGrip: 'Agarre', upGripD: 'La garra aprieta más', upTries: 'Intentos', upTriesD: '+1 intento por partida', upMagnet: 'Ayuda', upMagnetD: 'Agarra aunque falles un poco', upLuck: 'Suerte', upLuckD: 'Más brillantes y dorados', m0: 'Fiesta de osos', m1: 'Peluches héroes', m2: 'Llaveros', m3: 'Cápsulas', m4: 'Peluches gigantes', m5: 'Garra dorada', start: "¡ESCAPA!", story: "Encerrado en la tienda a las 3 AM. Abre 6 puertas antes del amanecer.", door: "PUERTA", keyHint: "¡Atrapa el peluche con la llave!", opened: "¡PUERTA ABIERTA!", escaped: "¡ESCAPASTE!", failDawn: "Amaneció...", failCoins: "Sin monedas...", best: "Récord", farthest: "Más lejos", timeL: "Tiempo", hold: "¡AGUANTA! ¡TOCA!", tap: "¡TOCA!", saved: "¡SALVADO!", blackout: "¡APAGÓN!", guard: "¡GUARDIA! ¡QUIETO!", spotted: "¡TE VIO! -3", quake: "¡TEMBLOR!", toolPick: "Elige una herramienta", cont: "+10 monedas y seguir", contT: "+2 min y seguir", retry: "REINTENTAR", newBest: "¡NUEVO RÉCORD!", tMagnet: "Imán", tMagnetD: "El próximo agarre no se suelta", tHammer: "Martillo", tHammerD: "Toca para sacudir la pila", tSticky: "Garra pegajosa", tStickyD: "3 agarres más firmes", tLight: "Linterna", tLightD: "Ves en los apagones", tWallet: "Cartera", tWalletD: "+6 monedas ya", tWatch: "Cronómetro", tWatchD: "+90 s antes del alba" },
-  pt: { play: 'JOGAR', again: 'DE NOVO', home: 'Loja', settings: 'Ajustes', close: 'Fechar', paused: 'Pausa', resume: 'Continuar', quit: 'Sair da máquina', music: 'Música', sfx: 'Som', shake: 'Vibração', language: 'Idioma', on: 'Sim', off: 'Não', drop: 'DESCE!', tries: 'TENTATIVAS', upgrades: 'Melhorias', book: 'Coleção', got: 'PEGUEI!', close1: 'QUASE!', miss: 'ERROU', fresh: 'NOVO!', common: 'Comum', rare: 'Brilhante', legend: 'Dourado', unlock: 'Abrir', result: 'Prêmios', none: 'Nada desta vez...', more: '+3 tentativas', double: 'Moedas x2', aim: 'Arraste para mover a garra e DESCE', max: 'MÁX', lvl: 'Nv', upGrip: 'Pegada', upGripD: 'A garra aperta mais', upTries: 'Tentativas', upTriesD: '+1 tentativa por jogo', upMagnet: 'Mira', upMagnetD: 'Segura mesmo fora do centro', upLuck: 'Sorte', upLuckD: 'Mais brilhantes e dourados', m0: 'Festa dos ursos', m1: 'Pelúcias heróis', m2: 'Chaveiros', m3: 'Cápsulas', m4: 'Pelúcias gigantes', m5: 'Garra dourada', start: "FUGIR", story: "Preso na loja às 3h. Abra 6 portas antes do amanhecer.", door: "PORTA", keyHint: "Pegue a pelúcia com a chave!", opened: "PORTA ABERTA!", escaped: "ESCAPOU!", failDawn: "Amanheceu...", failCoins: "Sem moedas...", best: "Recorde", farthest: "Mais longe", timeL: "Tempo", hold: "SEGURA! TOQUE!", tap: "TOQUE!", saved: "SALVO!", blackout: "APAGÃO!", guard: "GUARDA! PARADO!", spotted: "TE VIU! -3", quake: "TREMOR!", toolPick: "Escolha uma ferramenta", cont: "+10 moedas e continuar", contT: "+2 min e continuar", retry: "TENTAR DE NOVO", newBest: "NOVO RECORDE!", tMagnet: "Ímã", tMagnetD: "A próxima pegada não escorrega", tHammer: "Martelo", tHammerD: "Toque para sacudir a pilha", tSticky: "Garra grudenta", tStickyD: "3 pegadas mais firmes", tLight: "Lanterna", tLightD: "Enxerga no apagão", tWallet: "Carteira", tWalletD: "+6 moedas agora", tWatch: "Cronômetro", tWatchD: "+90 s até o amanhecer" },
-  ru: { play: 'ИГРАТЬ', again: 'ЕЩЁ РАЗ', home: 'Магазин', settings: 'Настройки', close: 'Закрыть', paused: 'Пауза', resume: 'Продолжить', quit: 'Уйти от автомата', music: 'Музыка', sfx: 'Звук', shake: 'Вибрация', language: 'Язык', on: 'Вкл', off: 'Выкл', drop: 'ВНИЗ!', tries: 'ПОПЫТКИ', upgrades: 'Улучшения', book: 'Коллекция', got: 'ЕСТЬ!', close1: 'ПОЧТИ!', miss: 'МИМО', fresh: 'НОВОЕ!', common: 'Обычная', rare: 'Блестящая', legend: 'Золотая', unlock: 'Открыть', result: 'Призы', none: 'В этот раз ничего...', more: '+3 попытки', double: 'Монеты x2', aim: 'Тяни, чтобы двигать клешню, потом ВНИЗ', max: 'МАКС', lvl: 'Ур', upGrip: 'Хватка', upGripD: 'Клешня держит крепче', upTries: 'Попытки', upTriesD: '+1 попытка за игру', upMagnet: 'Прицел', upMagnetD: 'Держит даже не по центру', upLuck: 'Удача', upLuckD: 'Больше блестящих и золотых', m0: 'Мишки', m1: 'Плюшевые герои', m2: 'Брелоки', m3: 'Капсулы', m4: 'Гиганты', m5: 'Золотая клешня', start: "СБЕЖАТЬ", story: "Заперт в магазине в 3 часа ночи. Открой 6 дверей до рассвета.", door: "ДВЕРЬ", keyHint: "Достань игрушку с ключом!", opened: "ДВЕРЬ ОТКРЫТА!", escaped: "ПОБЕГ!", failDawn: "Рассвело...", failCoins: "Монеты кончились...", best: "Рекорд", farthest: "Дальше всего", timeL: "Время", hold: "ДЕРЖИ! ЖМИ!", tap: "ЖМИ!", saved: "УДЕРЖАЛ!", blackout: "СВЕТ ПОГАС!", guard: "ОХРАНА! ЗАМРИ!", spotted: "ЗАМЕТИЛИ! -3", quake: "ТРЯСЁТ!", toolPick: "Выбери инструмент", cont: "+10 монет и дальше", contT: "+2 мин и дальше", retry: "ЕЩЁ РАЗ", newBest: "НОВЫЙ РЕКОРД!", tMagnet: "Магнит", tMagnetD: "Следующий захват не сорвётся", tHammer: "Молоток", tHammerD: "Нажми, чтобы встряхнуть кучу", tSticky: "Липкая клешня", tStickyD: "3 захвата крепче", tLight: "Фонарик", tLightD: "Видно без света", tWallet: "Кошелёк", tWalletD: "+6 монет сейчас", tWatch: "Секундомер", tWatchD: "+90 с до рассвета" },
-  tr: { play: 'OYNA', again: 'TEKRAR', home: 'Dükkân', settings: 'Ayarlar', close: 'Kapat', paused: 'Duraklatıldı', resume: 'Devam', quit: 'Makineden çık', music: 'Müzik', sfx: 'Ses', shake: 'Titreşim', language: 'Dil', on: 'Açık', off: 'Kapalı', drop: 'BIRAK!', tries: 'HAK', upgrades: 'Yükseltmeler', book: 'Koleksiyon', got: 'ALDIM!', close1: 'KIL PAYI!', miss: 'ISKA', fresh: 'YENİ!', common: 'Sıradan', rare: 'Parlak', legend: 'Altın', unlock: 'Aç', result: 'Ödüller', none: 'Bu sefer olmadı...', more: '+3 hak', double: 'Jeton x2', aim: 'Pençeyi sürükle, sonra BIRAK', max: 'MAKS', lvl: 'Sv', upGrip: 'Kavrama', upGripD: 'Pençe daha sıkı tutar', upTries: 'Hak', upTriesD: 'Oyun başına +1 hak', upMagnet: 'Nişan', upMagnetD: 'Biraz kaçsa da tutar', upLuck: 'Şans', upLuckD: 'Daha çok parlak ve altın', m0: 'Ayı partisi', m1: 'Kahraman peluşlar', m2: 'Anahtarlıklar', m3: 'Kapsüller', m4: 'Dev peluşlar', m5: 'Altın pençe', start: "KAÇ", story: "Gece 3te dükkâna kilitlendin. Şafaktan önce 6 kapıyı aç.", door: "KAPI", keyHint: "Anahtarlı peluşu yakala!", opened: "KAPI AÇILDI!", escaped: "KAÇTIN!", failDawn: "Sabah oldu...", failCoins: "Jeton bitti...", best: "En iyi", farthest: "En uzak", timeL: "Süre", hold: "TUT! BAS!", tap: "BAS!", saved: "KURTARDIN!", blackout: "ELEKTRİK KESİLDİ!", guard: "BEKÇİ! KIPIRDAMA!", spotted: "GÖRÜLDÜN! -3", quake: "SARSINTI!", toolPick: "Bir alet seç", cont: "+10 jetonla devam", contT: "+2 dk ile devam", retry: "TEKRAR DENE", newBest: "YENİ REKOR!", tMagnet: "Mıknatıs", tMagnetD: "Sonraki tutuş kaymaz", tHammer: "Çekiç", tHammerD: "Yığını sallamak için bas", tSticky: "Yapışkan pençe", tStickyD: "3 tutuş daha sıkı", tLight: "El feneri", tLightD: "Karanlıkta görürsün", tWallet: "Cüzdan", tWalletD: "Hemen +6 jeton", tWatch: "Kronometre", tWatchD: "Şafağa +90 sn" },
-  de: { play: 'SPIELEN', again: 'NOCHMAL', home: 'Laden', settings: 'Optionen', close: 'Schließen', paused: 'Pause', resume: 'Weiter', quit: 'Automat verlassen', music: 'Musik', sfx: 'Sound', shake: 'Vibration', language: 'Sprache', on: 'An', off: 'Aus', drop: 'RUNTER!', tries: 'VERSUCHE', upgrades: 'Upgrades', book: 'Sammlung', got: 'GESCHAFFT!', close1: 'KNAPP!', miss: 'DANEBEN', fresh: 'NEU!', common: 'Normal', rare: 'Glänzend', legend: 'Golden', unlock: 'Öffnen', result: 'Preise', none: 'Diesmal nichts...', more: '+3 Versuche', double: 'Münzen x2', aim: 'Ziehen zum Bewegen, dann RUNTER', max: 'MAX', lvl: 'St', upGrip: 'Griff', upGripD: 'Greifer hält fester', upTries: 'Versuche', upTriesD: '+1 Versuch pro Spiel', upMagnet: 'Zielhilfe', upMagnetD: 'Hält auch schräg', upLuck: 'Glück', upLuckD: 'Mehr glänzende und goldene', m0: 'Bärenparty', m1: 'Heldenplüsch', m2: 'Anhänger', m3: 'Kapseln', m4: 'Riesenplüsch', m5: 'Goldgreifer', start: "FLUCHT", story: "Um 3 Uhr im Greiferladen eingesperrt. Öffne 6 Türen vor dem Morgengrauen.", door: "TÜR", keyHint: "Schnapp dir das Plüschtier mit dem Schlüssel!", opened: "TÜR OFFEN!", escaped: "ENTKOMMEN!", failDawn: "Die Sonne ging auf...", failCoins: "Keine Münzen mehr...", best: "Rekord", farthest: "Am weitesten", timeL: "Zeit", hold: "FESTHALTEN! TIPPEN!", tap: "TIPP!", saved: "GEHALTEN!", blackout: "STROMAUSFALL!", guard: "WACHE! STILL!", spotted: "ERWISCHT! -3", quake: "ES WACKELT!", toolPick: "Wähle ein Werkzeug", cont: "+10 Münzen, weiter", contT: "+2 Min, weiter", retry: "NOCHMAL", newBest: "NEUER REKORD!", tMagnet: "Magnet", tMagnetD: "Nächster Griff rutscht nicht", tHammer: "Hammer", tHammerD: "Tippen rüttelt den Haufen", tSticky: "Klebegreifer", tStickyD: "3 Griffe fester", tLight: "Taschenlampe", tLightD: "Sicht bei Stromausfall", tWallet: "Geldbeutel", tWalletD: "+6 Münzen sofort", tWatch: "Stoppuhr", tWatchD: "+90 s bis zum Morgen" },
-  fr: { play: 'JOUER', again: 'REJOUER', home: 'Boutique', settings: 'Réglages', close: 'Fermer', paused: 'Pause', resume: 'Reprendre', quit: 'Quitter la machine', music: 'Musique', sfx: 'Son', shake: 'Vibration', language: 'Langue', on: 'Oui', off: 'Non', drop: 'LÂCHE !', tries: 'ESSAIS', upgrades: 'Améliorations', book: 'Collection', got: 'ATTRAPÉ !', close1: 'PRESQUE !', miss: 'RATÉ', fresh: 'NOUVEAU !', common: 'Normal', rare: 'Brillant', legend: 'Doré', unlock: 'Ouvrir', result: 'Lots', none: 'Rien cette fois...', more: '+3 essais', double: 'Pièces x2', aim: 'Glisse pour bouger la pince, puis LÂCHE', max: 'MAX', lvl: 'Nv', upGrip: 'Prise', upGripD: 'La pince serre plus', upTries: 'Essais', upTriesD: '+1 essai par partie', upMagnet: 'Visée', upMagnetD: 'Tient même décentré', upLuck: 'Chance', upLuckD: 'Plus de brillants et dorés', m0: 'Fête des oursons', m1: 'Peluches héros', m2: 'Porte-clés', m3: 'Capsules', m4: 'Peluches géantes', m5: 'Pince dorée', start: "S'ÉVADER", story: "Enfermé dans la boutique à 3 h. Ouvre 6 portes avant l'aube.", door: "PORTE", keyHint: "Attrape la peluche à la clé !", opened: "PORTE OUVERTE !", escaped: "ÉVADÉ !", failDawn: "Le jour s'est levé...", failCoins: "Plus de pièces...", best: "Record", farthest: "Le plus loin", timeL: "Temps", hold: "TIENS BON ! TAPE !", tap: "TAPE !", saved: "SAUVÉ !", blackout: "PANNE !", guard: "GARDIEN ! STOP !", spotted: "REPÉRÉ ! -3", quake: "ÇA TREMBLE !", toolPick: "Choisis un outil", cont: "+10 pièces et continuer", contT: "+2 min et continuer", retry: "RÉESSAYER", newBest: "NOUVEAU RECORD !", tMagnet: "Aimant", tMagnetD: "La prochaine prise ne glisse pas", tHammer: "Marteau", tHammerD: "Tape pour secouer le tas", tSticky: "Pince collante", tStickyD: "3 prises plus fermes", tLight: "Lampe", tLightD: "Tu vois dans la panne", tWallet: "Porte-monnaie", tWalletD: "+6 pièces", tWatch: "Chrono", tWatchD: "+90 s avant l'aube" },
-  ja: { play: 'プレイ', again: 'もう一回', home: 'お店へ', settings: '設定', close: '閉じる', paused: '一時停止', resume: '続ける', quit: '台から離れる', music: '音楽', sfx: '効果音', shake: '振動', language: '言語', on: 'オン', off: 'オフ', drop: 'おろす!', tries: '残り', upgrades: '強化', book: '図鑑', got: 'ゲット!', close1: 'おしい!', miss: 'ハズレ', fresh: 'NEW!', common: 'ふつう', rare: 'キラキラ', legend: 'ゴールド', unlock: '開放', result: '取れた景品', none: '今回はハズレ...', more: '+3回', double: 'コイン2倍', aim: 'ドラッグでアームを動かしておろす!', max: '最大', lvl: 'Lv', upGrip: 'アーム力', upGripD: 'しっかりつかむ', upTries: '回数', upTriesD: '1ゲーム+1回', upMagnet: 'ねらい補正', upMagnetD: '少しずれてもつかむ', upLuck: '運', upLuckD: 'キラキラ・ゴールドが出やすい', m0: 'クマパーティー', m1: 'ヒーローぬいぐるみ', m2: 'キーホルダー', m3: 'カプセル', m4: 'ジャンボぬいぐるみ', m5: 'ゴールドアーム', start: "脱出スタート", story: "午前3時、クレーンゲーム店に閉じ込められた。夜明けまでに扉を6つ開けろ。", door: "扉", keyHint: "鍵のぬいぐるみを取れ!", opened: "扉が開いた!", escaped: "脱出成功!", failDawn: "夜が明けた...", failCoins: "コインが尽きた...", best: "ベスト", farthest: "最高到達", timeL: "タイム", hold: "つかめ!連打!", tap: "連打!", saved: "耐えた!", blackout: "停電!", guard: "警備員!動くな!", spotted: "見つかった! -3", quake: "揺れる!", toolPick: "道具を選べ", cont: "+10コインで続ける", contT: "+2分で続ける", retry: "もう一度", newBest: "新記録!", tMagnet: "磁石", tMagnetD: "次の1回は落ちない", tHammer: "ハンマー", tHammerD: "タップで山を揺らす", tSticky: "ねばねばアーム", tStickyD: "3回しっかりつかむ", tLight: "懐中電灯", tLightD: "停電でも見える", tWallet: "がま口", tWalletD: "コイン+6", tWatch: "ストップウォッチ", tWatchD: "夜明けまで+90秒" },
-  zh: { play: '开始', again: '再来一次', home: '回店里', settings: '设置', close: '关闭', paused: '已暂停', resume: '继续', quit: '离开机器', music: '音乐', sfx: '音效', shake: '震动', language: '语言', on: '开', off: '关', drop: '下爪!', tries: '剩余', upgrades: '升级', book: '图鉴', got: '抓到了!', close1: '差一点!', miss: '没抓到', fresh: '新!', common: '普通', rare: '闪亮', legend: '黄金', unlock: '解锁', result: '奖品', none: '这次没抓到...', more: '+3次', double: '金币x2', aim: '拖动移动爪子,然后下爪', max: '满级', lvl: 'Lv', upGrip: '爪力', upGripD: '抓得更紧', upTries: '次数', upTriesD: '每局+1次', upMagnet: '瞄准辅助', upMagnetD: '偏一点也能抓住', upLuck: '幸运', upLuckD: '更多闪亮和黄金', m0: '小熊派对', m1: '英雄玩偶', m2: '钥匙扣', m3: '扭蛋', m4: '超大玩偶', m5: '黄金爪', start: "开始逃脱", story: "凌晨3点被困在抓娃娃店。天亮前打开6扇门。", door: "门", keyHint: "抓住带钥匙的玩偶!", opened: "门开了!", escaped: "逃脱成功!", failDawn: "天亮了...", failCoins: "金币用完了...", best: "最佳", farthest: "最远", timeL: "用时", hold: "抓紧!连点!", tap: "连点!", saved: "稳住了!", blackout: "停电了!", guard: "保安!别动!", spotted: "被发现了! -3", quake: "在晃!", toolPick: "选一个道具", cont: "+10金币继续", contT: "+2分钟继续", retry: "再试一次", newBest: "新纪录!", tMagnet: "磁铁", tMagnetD: "下一次不会滑落", tHammer: "锤子", tHammerD: "点击摇晃娃娃堆", tSticky: "粘粘爪", tStickyD: "3次抓得更紧", tLight: "手电筒", tLightD: "停电也看得见", tWallet: "钱包", tWalletD: "立即+6金币", tWatch: "秒表", tWatchD: "天亮前+90秒" },
+  en: { play: 'PLAY', again: 'PLAY AGAIN', home: 'Shop', settings: 'Settings', close: 'Close', paused: 'Paused', resume: 'Resume', quit: 'Leave machine', music: 'Music', sfx: 'Sound', shake: 'Vibration', language: 'Language', on: 'On', off: 'Off', drop: 'DROP', tries: 'TRIES', upgrades: 'Upgrades', book: 'Collection', got: 'GOT IT!', close1: 'SO CLOSE!', miss: 'MISS', fresh: 'NEW!', common: 'Common', rare: 'Shiny', legend: 'Golden', unlock: 'Unlock', result: 'Prizes', none: 'No prize this time...', more: '+3 tries', double: 'Coins x2', aim: 'Drag to move the claw, then DROP', max: 'MAX', lvl: 'Lv', upGrip: 'Grip', upGripD: 'Claw holds tighter', upTries: 'Tries', upTriesD: '+1 try per game', upMagnet: 'Aim help', upMagnetD: 'Off-center grabs hold', upLuck: 'Luck', upLuckD: 'More shiny & golden', m0: 'Bear Party', m1: 'Hero Plush', m2: 'Keychains', m3: 'Capsules', m4: 'Giant Plush', m5: 'Golden Claw', start: "ESCAPE", story: "Locked in the claw shop at 3 AM. Open 6 doors before dawn.", door: "DOOR", keyHint: "Catch the plush with the key!", opened: "DOOR OPEN!", escaped: "ESCAPED!", failDawn: "The sun came up...", failCoins: "Out of coins...", best: "Best", farthest: "Farthest", timeL: "Time", hold: "HOLD ON! TAP!", tap: "TAP!", saved: "SAVED!", blackout: "BLACKOUT!", guard: "GUARD! FREEZE!", spotted: "SPOTTED! -3", quake: "SHAKING!", toolPick: "Pick a tool", cont: "+10 coins & continue", contT: "+2 min & continue", retry: "TRY AGAIN", newBest: "NEW RECORD!", tMagnet: "Magnet", tMagnetD: "Next grab never slips", tHammer: "Hammer", tHammerD: "Tap to shake the pile", tSticky: "Sticky claw", tStickyD: "3 grabs hold tighter", tLight: "Flashlight", tLightD: "See in blackouts", tWallet: "Wallet", tWalletD: "+6 coins now", tWatch: "Stopwatch", tWatchD: "+90 s before dawn", lockedIn: "LOCKED IN!" },
+  ko: { play: '뽑기 시작', again: '한 번 더', home: '가게로', settings: '설정', close: '닫기', paused: '일시정지', resume: '계속', quit: '기계에서 나가기', music: '배경음', sfx: '효과음', shake: '진동', language: '언어', on: '켬', off: '끔', drop: '내려!', tries: '남은 판', upgrades: '강화', book: '도감', got: '뽑았다!', close1: '아깝다!', miss: '꽝', fresh: 'NEW!', common: '보통', rare: '반짝', legend: '황금', unlock: '열기', result: '뽑은 인형', none: '이번엔 꽝...', more: '+3판 더', double: '코인 2배', aim: '끌어서 좌우 · 앞뒤로 맞추고 내려!', max: '최대', lvl: 'Lv', upGrip: '집게 힘', upGripD: '더 꽉 잡는다', upTries: '판 수', upTriesD: '한 게임에 +1판', upMagnet: '조준 보정', upMagnetD: '살짝 빗나가도 잡는다', upLuck: '행운', upLuckD: '반짝 · 황금이 더 자주', m0: '곰돌이 파티', m1: '영웅 인형', m2: '열쇠고리', m3: '캡슐 뽑기', m4: '왕 큰 인형', m5: '황금 집게', start: "탈출 시작", story: "새벽 3시, 뽑기방에 갇혔다. 동트기 전에 문 6개를 열어라.", door: "문", keyHint: "열쇠 인형을 뽑아라!", opened: "문이 열렸다!", escaped: "탈출 성공!", failDawn: "날이 밝았다...", failCoins: "코인이 다 떨어졌다...", best: "최고 기록", farthest: "가장 멀리", timeL: "시간", hold: "꽉 잡아! 연타!", tap: "연타!", saved: "버텼다!", blackout: "정전!", guard: "경비다! 멈춰!", spotted: "들켰다! -3", quake: "흔들린다!", toolPick: "도구를 골라", cont: "+10코인으로 이어하기", contT: "+2분으로 이어하기", retry: "다시 도전", newBest: "신기록!", tMagnet: "자석", tMagnetD: "다음 한 번은 안 놓친다", tHammer: "망치", tHammerD: "눌러서 더미 흔들기", tSticky: "끈끈이 집게", tStickyD: "3번 동안 더 꽉", tLight: "손전등", tLightD: "정전에도 보인다", tWallet: "동전 지갑", tWalletD: "지금 코인 +6", tWatch: "멈춘 시계", tWatchD: "동트기까지 +90초", lockedIn: "갇혔다!" },
+  es: { play: 'JUGAR', again: 'OTRA VEZ', home: 'Tienda', settings: 'Ajustes', close: 'Cerrar', paused: 'Pausa', resume: 'Seguir', quit: 'Salir de la máquina', music: 'Música', sfx: 'Sonido', shake: 'Vibración', language: 'Idioma', on: 'Sí', off: 'No', drop: '¡BAJA!', tries: 'INTENTOS', upgrades: 'Mejoras', book: 'Colección', got: '¡LO TENGO!', close1: '¡CASI!', miss: 'FALLO', fresh: '¡NUEVO!', common: 'Común', rare: 'Brillante', legend: 'Dorado', unlock: 'Abrir', result: 'Premios', none: 'Esta vez nada...', more: '+3 intentos', double: 'Monedas x2', aim: 'Arrastra para mover la garra y BAJA', max: 'MÁX', lvl: 'Nv', upGrip: 'Agarre', upGripD: 'La garra aprieta más', upTries: 'Intentos', upTriesD: '+1 intento por partida', upMagnet: 'Ayuda', upMagnetD: 'Agarra aunque falles un poco', upLuck: 'Suerte', upLuckD: 'Más brillantes y dorados', m0: 'Fiesta de osos', m1: 'Peluches héroes', m2: 'Llaveros', m3: 'Cápsulas', m4: 'Peluches gigantes', m5: 'Garra dorada', start: "¡ESCAPA!", story: "Encerrado en la tienda a las 3 AM. Abre 6 puertas antes del amanecer.", door: "PUERTA", keyHint: "¡Atrapa el peluche con la llave!", opened: "¡PUERTA ABIERTA!", escaped: "¡ESCAPASTE!", failDawn: "Amaneció...", failCoins: "Sin monedas...", best: "Récord", farthest: "Más lejos", timeL: "Tiempo", hold: "¡AGUANTA! ¡TOCA!", tap: "¡TOCA!", saved: "¡SALVADO!", blackout: "¡APAGÓN!", guard: "¡GUARDIA! ¡QUIETO!", spotted: "¡TE VIO! -3", quake: "¡TEMBLOR!", toolPick: "Elige una herramienta", cont: "+10 monedas y seguir", contT: "+2 min y seguir", retry: "REINTENTAR", newBest: "¡NUEVO RÉCORD!", tMagnet: "Imán", tMagnetD: "El próximo agarre no se suelta", tHammer: "Martillo", tHammerD: "Toca para sacudir la pila", tSticky: "Garra pegajosa", tStickyD: "3 agarres más firmes", tLight: "Linterna", tLightD: "Ves en los apagones", tWallet: "Cartera", tWalletD: "+6 monedas ya", tWatch: "Cronómetro", tWatchD: "+90 s antes del alba", lockedIn: "¡ENCERRADO!" },
+  pt: { play: 'JOGAR', again: 'DE NOVO', home: 'Loja', settings: 'Ajustes', close: 'Fechar', paused: 'Pausa', resume: 'Continuar', quit: 'Sair da máquina', music: 'Música', sfx: 'Som', shake: 'Vibração', language: 'Idioma', on: 'Sim', off: 'Não', drop: 'DESCE!', tries: 'TENTATIVAS', upgrades: 'Melhorias', book: 'Coleção', got: 'PEGUEI!', close1: 'QUASE!', miss: 'ERROU', fresh: 'NOVO!', common: 'Comum', rare: 'Brilhante', legend: 'Dourado', unlock: 'Abrir', result: 'Prêmios', none: 'Nada desta vez...', more: '+3 tentativas', double: 'Moedas x2', aim: 'Arraste para mover a garra e DESCE', max: 'MÁX', lvl: 'Nv', upGrip: 'Pegada', upGripD: 'A garra aperta mais', upTries: 'Tentativas', upTriesD: '+1 tentativa por jogo', upMagnet: 'Mira', upMagnetD: 'Segura mesmo fora do centro', upLuck: 'Sorte', upLuckD: 'Mais brilhantes e dourados', m0: 'Festa dos ursos', m1: 'Pelúcias heróis', m2: 'Chaveiros', m3: 'Cápsulas', m4: 'Pelúcias gigantes', m5: 'Garra dourada', start: "FUGIR", story: "Preso na loja às 3h. Abra 6 portas antes do amanhecer.", door: "PORTA", keyHint: "Pegue a pelúcia com a chave!", opened: "PORTA ABERTA!", escaped: "ESCAPOU!", failDawn: "Amanheceu...", failCoins: "Sem moedas...", best: "Recorde", farthest: "Mais longe", timeL: "Tempo", hold: "SEGURA! TOQUE!", tap: "TOQUE!", saved: "SALVO!", blackout: "APAGÃO!", guard: "GUARDA! PARADO!", spotted: "TE VIU! -3", quake: "TREMOR!", toolPick: "Escolha uma ferramenta", cont: "+10 moedas e continuar", contT: "+2 min e continuar", retry: "TENTAR DE NOVO", newBest: "NOVO RECORDE!", tMagnet: "Ímã", tMagnetD: "A próxima pegada não escorrega", tHammer: "Martelo", tHammerD: "Toque para sacudir a pilha", tSticky: "Garra grudenta", tStickyD: "3 pegadas mais firmes", tLight: "Lanterna", tLightD: "Enxerga no apagão", tWallet: "Carteira", tWalletD: "+6 moedas agora", tWatch: "Cronômetro", tWatchD: "+90 s até o amanhecer", lockedIn: "TRANCADO!" },
+  ru: { play: 'ИГРАТЬ', again: 'ЕЩЁ РАЗ', home: 'Магазин', settings: 'Настройки', close: 'Закрыть', paused: 'Пауза', resume: 'Продолжить', quit: 'Уйти от автомата', music: 'Музыка', sfx: 'Звук', shake: 'Вибрация', language: 'Язык', on: 'Вкл', off: 'Выкл', drop: 'ВНИЗ!', tries: 'ПОПЫТКИ', upgrades: 'Улучшения', book: 'Коллекция', got: 'ЕСТЬ!', close1: 'ПОЧТИ!', miss: 'МИМО', fresh: 'НОВОЕ!', common: 'Обычная', rare: 'Блестящая', legend: 'Золотая', unlock: 'Открыть', result: 'Призы', none: 'В этот раз ничего...', more: '+3 попытки', double: 'Монеты x2', aim: 'Тяни, чтобы двигать клешню, потом ВНИЗ', max: 'МАКС', lvl: 'Ур', upGrip: 'Хватка', upGripD: 'Клешня держит крепче', upTries: 'Попытки', upTriesD: '+1 попытка за игру', upMagnet: 'Прицел', upMagnetD: 'Держит даже не по центру', upLuck: 'Удача', upLuckD: 'Больше блестящих и золотых', m0: 'Мишки', m1: 'Плюшевые герои', m2: 'Брелоки', m3: 'Капсулы', m4: 'Гиганты', m5: 'Золотая клешня', start: "СБЕЖАТЬ", story: "Заперт в магазине в 3 часа ночи. Открой 6 дверей до рассвета.", door: "ДВЕРЬ", keyHint: "Достань игрушку с ключом!", opened: "ДВЕРЬ ОТКРЫТА!", escaped: "ПОБЕГ!", failDawn: "Рассвело...", failCoins: "Монеты кончились...", best: "Рекорд", farthest: "Дальше всего", timeL: "Время", hold: "ДЕРЖИ! ЖМИ!", tap: "ЖМИ!", saved: "УДЕРЖАЛ!", blackout: "СВЕТ ПОГАС!", guard: "ОХРАНА! ЗАМРИ!", spotted: "ЗАМЕТИЛИ! -3", quake: "ТРЯСЁТ!", toolPick: "Выбери инструмент", cont: "+10 монет и дальше", contT: "+2 мин и дальше", retry: "ЕЩЁ РАЗ", newBest: "НОВЫЙ РЕКОРД!", tMagnet: "Магнит", tMagnetD: "Следующий захват не сорвётся", tHammer: "Молоток", tHammerD: "Нажми, чтобы встряхнуть кучу", tSticky: "Липкая клешня", tStickyD: "3 захвата крепче", tLight: "Фонарик", tLightD: "Видно без света", tWallet: "Кошелёк", tWalletD: "+6 монет сейчас", tWatch: "Секундомер", tWatchD: "+90 с до рассвета", lockedIn: "ЗАПЕРТО!" },
+  tr: { play: 'OYNA', again: 'TEKRAR', home: 'Dükkân', settings: 'Ayarlar', close: 'Kapat', paused: 'Duraklatıldı', resume: 'Devam', quit: 'Makineden çık', music: 'Müzik', sfx: 'Ses', shake: 'Titreşim', language: 'Dil', on: 'Açık', off: 'Kapalı', drop: 'BIRAK!', tries: 'HAK', upgrades: 'Yükseltmeler', book: 'Koleksiyon', got: 'ALDIM!', close1: 'KIL PAYI!', miss: 'ISKA', fresh: 'YENİ!', common: 'Sıradan', rare: 'Parlak', legend: 'Altın', unlock: 'Aç', result: 'Ödüller', none: 'Bu sefer olmadı...', more: '+3 hak', double: 'Jeton x2', aim: 'Pençeyi sürükle, sonra BIRAK', max: 'MAKS', lvl: 'Sv', upGrip: 'Kavrama', upGripD: 'Pençe daha sıkı tutar', upTries: 'Hak', upTriesD: 'Oyun başına +1 hak', upMagnet: 'Nişan', upMagnetD: 'Biraz kaçsa da tutar', upLuck: 'Şans', upLuckD: 'Daha çok parlak ve altın', m0: 'Ayı partisi', m1: 'Kahraman peluşlar', m2: 'Anahtarlıklar', m3: 'Kapsüller', m4: 'Dev peluşlar', m5: 'Altın pençe', start: "KAÇ", story: "Gece 3te dükkâna kilitlendin. Şafaktan önce 6 kapıyı aç.", door: "KAPI", keyHint: "Anahtarlı peluşu yakala!", opened: "KAPI AÇILDI!", escaped: "KAÇTIN!", failDawn: "Sabah oldu...", failCoins: "Jeton bitti...", best: "En iyi", farthest: "En uzak", timeL: "Süre", hold: "TUT! BAS!", tap: "BAS!", saved: "KURTARDIN!", blackout: "ELEKTRİK KESİLDİ!", guard: "BEKÇİ! KIPIRDAMA!", spotted: "GÖRÜLDÜN! -3", quake: "SARSINTI!", toolPick: "Bir alet seç", cont: "+10 jetonla devam", contT: "+2 dk ile devam", retry: "TEKRAR DENE", newBest: "YENİ REKOR!", tMagnet: "Mıknatıs", tMagnetD: "Sonraki tutuş kaymaz", tHammer: "Çekiç", tHammerD: "Yığını sallamak için bas", tSticky: "Yapışkan pençe", tStickyD: "3 tutuş daha sıkı", tLight: "El feneri", tLightD: "Karanlıkta görürsün", tWallet: "Cüzdan", tWalletD: "Hemen +6 jeton", tWatch: "Kronometre", tWatchD: "Şafağa +90 sn", lockedIn: "KİLİTLENDİ!" },
+  de: { play: 'SPIELEN', again: 'NOCHMAL', home: 'Laden', settings: 'Optionen', close: 'Schließen', paused: 'Pause', resume: 'Weiter', quit: 'Automat verlassen', music: 'Musik', sfx: 'Sound', shake: 'Vibration', language: 'Sprache', on: 'An', off: 'Aus', drop: 'RUNTER!', tries: 'VERSUCHE', upgrades: 'Upgrades', book: 'Sammlung', got: 'GESCHAFFT!', close1: 'KNAPP!', miss: 'DANEBEN', fresh: 'NEU!', common: 'Normal', rare: 'Glänzend', legend: 'Golden', unlock: 'Öffnen', result: 'Preise', none: 'Diesmal nichts...', more: '+3 Versuche', double: 'Münzen x2', aim: 'Ziehen zum Bewegen, dann RUNTER', max: 'MAX', lvl: 'St', upGrip: 'Griff', upGripD: 'Greifer hält fester', upTries: 'Versuche', upTriesD: '+1 Versuch pro Spiel', upMagnet: 'Zielhilfe', upMagnetD: 'Hält auch schräg', upLuck: 'Glück', upLuckD: 'Mehr glänzende und goldene', m0: 'Bärenparty', m1: 'Heldenplüsch', m2: 'Anhänger', m3: 'Kapseln', m4: 'Riesenplüsch', m5: 'Goldgreifer', start: "FLUCHT", story: "Um 3 Uhr im Greiferladen eingesperrt. Öffne 6 Türen vor dem Morgengrauen.", door: "TÜR", keyHint: "Schnapp dir das Plüschtier mit dem Schlüssel!", opened: "TÜR OFFEN!", escaped: "ENTKOMMEN!", failDawn: "Die Sonne ging auf...", failCoins: "Keine Münzen mehr...", best: "Rekord", farthest: "Am weitesten", timeL: "Zeit", hold: "FESTHALTEN! TIPPEN!", tap: "TIPP!", saved: "GEHALTEN!", blackout: "STROMAUSFALL!", guard: "WACHE! STILL!", spotted: "ERWISCHT! -3", quake: "ES WACKELT!", toolPick: "Wähle ein Werkzeug", cont: "+10 Münzen, weiter", contT: "+2 Min, weiter", retry: "NOCHMAL", newBest: "NEUER REKORD!", tMagnet: "Magnet", tMagnetD: "Nächster Griff rutscht nicht", tHammer: "Hammer", tHammerD: "Tippen rüttelt den Haufen", tSticky: "Klebegreifer", tStickyD: "3 Griffe fester", tLight: "Taschenlampe", tLightD: "Sicht bei Stromausfall", tWallet: "Geldbeutel", tWalletD: "+6 Münzen sofort", tWatch: "Stoppuhr", tWatchD: "+90 s bis zum Morgen", lockedIn: "EINGESPERRT!" },
+  fr: { play: 'JOUER', again: 'REJOUER', home: 'Boutique', settings: 'Réglages', close: 'Fermer', paused: 'Pause', resume: 'Reprendre', quit: 'Quitter la machine', music: 'Musique', sfx: 'Son', shake: 'Vibration', language: 'Langue', on: 'Oui', off: 'Non', drop: 'LÂCHE !', tries: 'ESSAIS', upgrades: 'Améliorations', book: 'Collection', got: 'ATTRAPÉ !', close1: 'PRESQUE !', miss: 'RATÉ', fresh: 'NOUVEAU !', common: 'Normal', rare: 'Brillant', legend: 'Doré', unlock: 'Ouvrir', result: 'Lots', none: 'Rien cette fois...', more: '+3 essais', double: 'Pièces x2', aim: 'Glisse pour bouger la pince, puis LÂCHE', max: 'MAX', lvl: 'Nv', upGrip: 'Prise', upGripD: 'La pince serre plus', upTries: 'Essais', upTriesD: '+1 essai par partie', upMagnet: 'Visée', upMagnetD: 'Tient même décentré', upLuck: 'Chance', upLuckD: 'Plus de brillants et dorés', m0: 'Fête des oursons', m1: 'Peluches héros', m2: 'Porte-clés', m3: 'Capsules', m4: 'Peluches géantes', m5: 'Pince dorée', start: "S'ÉVADER", story: "Enfermé dans la boutique à 3 h. Ouvre 6 portes avant l'aube.", door: "PORTE", keyHint: "Attrape la peluche à la clé !", opened: "PORTE OUVERTE !", escaped: "ÉVADÉ !", failDawn: "Le jour s'est levé...", failCoins: "Plus de pièces...", best: "Record", farthest: "Le plus loin", timeL: "Temps", hold: "TIENS BON ! TAPE !", tap: "TAPE !", saved: "SAUVÉ !", blackout: "PANNE !", guard: "GARDIEN ! STOP !", spotted: "REPÉRÉ ! -3", quake: "ÇA TREMBLE !", toolPick: "Choisis un outil", cont: "+10 pièces et continuer", contT: "+2 min et continuer", retry: "RÉESSAYER", newBest: "NOUVEAU RECORD !", tMagnet: "Aimant", tMagnetD: "La prochaine prise ne glisse pas", tHammer: "Marteau", tHammerD: "Tape pour secouer le tas", tSticky: "Pince collante", tStickyD: "3 prises plus fermes", tLight: "Lampe", tLightD: "Tu vois dans la panne", tWallet: "Porte-monnaie", tWalletD: "+6 pièces", tWatch: "Chrono", tWatchD: "+90 s avant l'aube", lockedIn: "ENFERMÉ !" },
+  ja: { play: 'プレイ', again: 'もう一回', home: 'お店へ', settings: '設定', close: '閉じる', paused: '一時停止', resume: '続ける', quit: '台から離れる', music: '音楽', sfx: '効果音', shake: '振動', language: '言語', on: 'オン', off: 'オフ', drop: 'おろす!', tries: '残り', upgrades: '強化', book: '図鑑', got: 'ゲット!', close1: 'おしい!', miss: 'ハズレ', fresh: 'NEW!', common: 'ふつう', rare: 'キラキラ', legend: 'ゴールド', unlock: '開放', result: '取れた景品', none: '今回はハズレ...', more: '+3回', double: 'コイン2倍', aim: 'ドラッグでアームを動かしておろす!', max: '最大', lvl: 'Lv', upGrip: 'アーム力', upGripD: 'しっかりつかむ', upTries: '回数', upTriesD: '1ゲーム+1回', upMagnet: 'ねらい補正', upMagnetD: '少しずれてもつかむ', upLuck: '運', upLuckD: 'キラキラ・ゴールドが出やすい', m0: 'クマパーティー', m1: 'ヒーローぬいぐるみ', m2: 'キーホルダー', m3: 'カプセル', m4: 'ジャンボぬいぐるみ', m5: 'ゴールドアーム', start: "脱出スタート", story: "午前3時、クレーンゲーム店に閉じ込められた。夜明けまでに扉を6つ開けろ。", door: "扉", keyHint: "鍵のぬいぐるみを取れ!", opened: "扉が開いた!", escaped: "脱出成功!", failDawn: "夜が明けた...", failCoins: "コインが尽きた...", best: "ベスト", farthest: "最高到達", timeL: "タイム", hold: "つかめ!連打!", tap: "連打!", saved: "耐えた!", blackout: "停電!", guard: "警備員!動くな!", spotted: "見つかった! -3", quake: "揺れる!", toolPick: "道具を選べ", cont: "+10コインで続ける", contT: "+2分で続ける", retry: "もう一度", newBest: "新記録!", tMagnet: "磁石", tMagnetD: "次の1回は落ちない", tHammer: "ハンマー", tHammerD: "タップで山を揺らす", tSticky: "ねばねばアーム", tStickyD: "3回しっかりつかむ", tLight: "懐中電灯", tLightD: "停電でも見える", tWallet: "がま口", tWalletD: "コイン+6", tWatch: "ストップウォッチ", tWatchD: "夜明けまで+90秒", lockedIn: "閉じ込められた!" },
+  zh: { play: '开始', again: '再来一次', home: '回店里', settings: '设置', close: '关闭', paused: '已暂停', resume: '继续', quit: '离开机器', music: '音乐', sfx: '音效', shake: '震动', language: '语言', on: '开', off: '关', drop: '下爪!', tries: '剩余', upgrades: '升级', book: '图鉴', got: '抓到了!', close1: '差一点!', miss: '没抓到', fresh: '新!', common: '普通', rare: '闪亮', legend: '黄金', unlock: '解锁', result: '奖品', none: '这次没抓到...', more: '+3次', double: '金币x2', aim: '拖动移动爪子,然后下爪', max: '满级', lvl: 'Lv', upGrip: '爪力', upGripD: '抓得更紧', upTries: '次数', upTriesD: '每局+1次', upMagnet: '瞄准辅助', upMagnetD: '偏一点也能抓住', upLuck: '幸运', upLuckD: '更多闪亮和黄金', m0: '小熊派对', m1: '英雄玩偶', m2: '钥匙扣', m3: '扭蛋', m4: '超大玩偶', m5: '黄金爪', start: "开始逃脱", story: "凌晨3点被困在抓娃娃店。天亮前打开6扇门。", door: "门", keyHint: "抓住带钥匙的玩偶!", opened: "门开了!", escaped: "逃脱成功!", failDawn: "天亮了...", failCoins: "金币用完了...", best: "最佳", farthest: "最远", timeL: "用时", hold: "抓紧!连点!", tap: "连点!", saved: "稳住了!", blackout: "停电了!", guard: "保安!别动!", spotted: "被发现了! -3", quake: "在晃!", toolPick: "选一个道具", cont: "+10金币继续", contT: "+2分钟继续", retry: "再试一次", newBest: "新纪录!", tMagnet: "磁铁", tMagnetD: "下一次不会滑落", tHammer: "锤子", tHammerD: "点击摇晃娃娃堆", tSticky: "粘粘爪", tStickyD: "3次抓得更紧", tLight: "手电筒", tLightD: "停电也看得见", tWallet: "钱包", tWalletD: "立即+6金币", tWatch: "秒表", tWatchD: "天亮前+90秒", lockedIn: "被锁住了!" },
 }
 const LANGUAGES = { en: 'English', ko: '한국어', es: 'Español', pt: 'Português', ru: 'Русский', tr: 'Türkçe', de: 'Deutsch', fr: 'Français', ja: '日本語', zh: '简体中文' }
 const LANG_KEYS = Object.keys(LANGUAGES)
@@ -283,34 +283,91 @@ renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
 renderer.outputColorSpace = THREE.SRGBColorSpace
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x1b1033)
-scene.fog = new THREE.Fog(0x1b1033, 7, 16)
+scene.fog = new THREE.Fog(0x1b1033, 14, 30)
 const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 60)
 const hemi = new THREE.HemisphereLight(0xfff0ff, 0x3a2266, 1.25); scene.add(hemi)
 const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(1.5, 4, 3); scene.add(key)
 const pinkLight = new THREE.PointLight(0xff4fd8, 6, 8, 1.6); pinkLight.position.set(-2.5, 2.6, 1.5); scene.add(pinkLight)
 const cyanLight = new THREE.PointLight(0x4fc3ff, 6, 8, 1.6); cyanLight.position.set(2.5, 2.6, 1.5); scene.add(cyanLight)
 
-// Room: checker floor, dark walls, neon strips on the ceiling (the shops in the user's photos).
-function checker() {
+// Shop: a storefront with a glass door, a long bright corridor, machines on both sides (the user's shop photos).
+const NEON = (c) => new THREE.MeshBasicMaterial({ color: c })
+const FLOOR_Y = -0.95, HALL = 2.25, FRONT_Z = 0.45, BACK_Z = -9.2, CEIL = 2.35
+function tileTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256
-  const g = c.getContext('2d')
-  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.fillStyle = (x + y) % 2 ? '#f4eef8' : '#1d1630'; g.fillRect(x * 64, y * 64, 64, 64) }
-  const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(10, 4); tex.colorSpace = THREE.SRGBColorSpace
+  const g = c.getContext('2d'); g.fillStyle = '#e9eef6'; g.fillRect(0, 0, 256, 256)
+  g.strokeStyle = '#c9d3e3'; g.lineWidth = 3; for (let i = 0; i <= 256; i += 128) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.moveTo(0, i); g.lineTo(256, i); g.stroke() }
+  const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 8); tex.colorSpace = THREE.SRGBColorSpace
   return tex
 }
-const SPACING = 1.75
-const ROOM_W = SPACING * MACHINES.length + 4
-const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, 8).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: checker() }))
-floorMesh.position.set(SPACING * (MACHINES.length - 1) / 2, -0.95, 1.6); scene.add(floorMesh)
-const wall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, 5), new THREE.MeshLambertMaterial({ color: 0x2a1a4a }))
-wall.position.set(SPACING * (MACHINES.length - 1) / 2, 1.5, -1.1); scene.add(wall)
-const NEON = (c) => new THREE.MeshBasicMaterial({ color: c })
-for (let i = 0; i < 3; i++) {
-  const strip = new THREE.Mesh(new THREE.BoxGeometry(ROOM_W, 0.04, 0.04), NEON(i % 2 ? 0x4fc3ff : 0xff4fd8))
-  strip.position.set(SPACING * (MACHINES.length - 1) / 2, 2.9, -0.6 + i * 1.2); scene.add(strip)
+const room = new THREE.Group(); scene.add(room)
+const plane = (w, h, mat, x, y, z, rx = 0, ry = 0) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(x, y, z); m.rotation.set(rx, ry, 0); room.add(m); return m }
+const boxAt = (w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); room.add(m); return m }
+const hallLen = FRONT_Z - BACK_Z, hallMid = (FRONT_Z + BACK_Z) / 2
+plane(HALL * 2, hallLen, new THREE.MeshLambertMaterial({ map: tileTexture() }), 0, FLOOR_Y, hallMid, -Math.PI / 2)
+plane(hallLen, CEIL - FLOOR_Y, new THREE.MeshLambertMaterial({ color: 0xeef6ff }), -HALL, (CEIL + FLOOR_Y) / 2, hallMid, 0, Math.PI / 2)
+plane(hallLen, CEIL - FLOOR_Y, new THREE.MeshLambertMaterial({ color: 0xeef6ff }), HALL, (CEIL + FLOOR_Y) / 2, hallMid, 0, -Math.PI / 2)
+plane(HALL * 2, CEIL - FLOOR_Y, new THREE.MeshLambertMaterial({ color: 0xdfeefc }), 0, (CEIL + FLOOR_Y) / 2, BACK_Z)
+plane(HALL * 2, hallLen, new THREE.MeshLambertMaterial({ color: 0x8fd0f0 }), 0, CEIL, hallMid, Math.PI / 2)
+// LED frames on the ceiling, one after another down the hall
+const led = NEON(0xffffff)
+for (let z = FRONT_Z - 1.4; z > BACK_Z + 0.8; z -= 2.4) {
+  boxAt(1.5, 0.03, 0.05, led, 0, CEIL - 0.02, z + 0.9); boxAt(1.5, 0.03, 0.05, led, 0, CEIL - 0.02, z - 0.9)
+  boxAt(0.05, 0.03, 1.8, led, -0.75, CEIL - 0.02, z); boxAt(0.05, 0.03, 1.8, led, 0.75, CEIL - 0.02, z)
 }
-const wallStrip = new THREE.Mesh(new THREE.BoxGeometry(ROOM_W, 0.05, 0.03), NEON(0xff4fd8)); wallStrip.position.set(SPACING * (MACHINES.length - 1) / 2, 2.25, -1.08); scene.add(wallStrip)
-
+// stools in pink and mint
+const stoolMats = [new THREE.MeshLambertMaterial({ color: 0xffb3d1 }), new THREE.MeshLambertMaterial({ color: 0x9fe8cf })]
+for (let i = 0; i < 9; i++) {
+  const side = i % 2 ? 1 : -1, z = FRONT_Z - 0.9 - i * 0.95
+  const st = new THREE.Group(); st.position.set(side * 0.78, FLOOR_Y, z)
+  const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 16), stoolMats[i % 2]); seat.position.y = 0.44
+  st.add(seat)
+  for (let k = 0; k < 3; k++) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.42, 6), stoolMats[i % 2]); const a = k * 2.1; leg.position.set(Math.cos(a) * 0.11, 0.21, Math.sin(a) * 0.11); st.add(leg) }
+  room.add(st)
+}
+// storefront: teal wall with a door opening, white neon frame, glowing sign
+const teal = new THREE.MeshLambertMaterial({ color: 0x4fb8b8 })
+const OPEN_W = 2.3, OPEN_TOP = 1.6, FRONT_TOP = 3.3, FRONT_W = 7
+boxAt((FRONT_W - OPEN_W) / 2, FRONT_TOP - FLOOR_Y, 0.2, teal, -(OPEN_W + (FRONT_W - OPEN_W) / 2) / 2, (FRONT_TOP + FLOOR_Y) / 2, FRONT_Z + 0.1)
+boxAt((FRONT_W - OPEN_W) / 2, FRONT_TOP - FLOOR_Y, 0.2, teal, (OPEN_W + (FRONT_W - OPEN_W) / 2) / 2, (FRONT_TOP + FLOOR_Y) / 2, FRONT_Z + 0.1)
+boxAt(OPEN_W, FRONT_TOP - OPEN_TOP, 0.2, teal, 0, (FRONT_TOP + OPEN_TOP) / 2, FRONT_Z + 0.1)
+const doorFrame = NEON(0xf4ffff)
+boxAt(0.07, OPEN_TOP - FLOOR_Y, 0.06, doorFrame, -OPEN_W / 2 - 0.05, (OPEN_TOP + FLOOR_Y) / 2, FRONT_Z + 0.22)
+boxAt(0.07, OPEN_TOP - FLOOR_Y, 0.06, doorFrame, OPEN_W / 2 + 0.05, (OPEN_TOP + FLOOR_Y) / 2, FRONT_Z + 0.22)
+boxAt(OPEN_W + 0.17, 0.07, 0.06, frame, 0, OPEN_TOP + 0.05, FRONT_Z + 0.22)
+function storeSign() {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 300
+  const g = c.getContext('2d')
+  g.fillStyle = '#5fb8f5'; g.fillRect(0, 0, 1024, 300)
+  g.strokeStyle = '#ffffff'; g.lineWidth = 10; g.strokeRect(14, 14, 996, 272)
+  g.font = '900 190px Arial Rounded MT Bold, Arial Black, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.lineJoin = 'round'; g.lineWidth = 34; g.strokeStyle = '#ffffff'; g.strokeText('CLAW POP', 512, 158)
+  g.fillStyle = '#ff5fc8'; g.fillText('CLAW POP', 512, 158)
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+boxAt(3.5, 1.06, 0.18, NEON(0xe6f7ff), 0, 2.3, FRONT_Z + 0.3)
+plane(3.4, 1.0, new THREE.MeshBasicMaterial({ map: storeSign() }), 0, 2.3, FRONT_Z + 0.4)
+// sliding glass doors
+const doorGlass = new THREE.MeshPhysicalMaterial({ color: 0xdff6ff, transparent: true, opacity: 0.18, roughness: 0.05, depthWrite: false, side: THREE.DoubleSide })
+const doors = [-1, 1].map((side) => {
+  const d = new THREE.Group()
+  const pane = new THREE.Mesh(new THREE.PlaneGeometry(OPEN_W / 2, OPEN_TOP - FLOOR_Y), doorGlass); pane.renderOrder = 3
+  const rim = new THREE.Mesh(new THREE.BoxGeometry(OPEN_W / 2, OPEN_TOP - FLOOR_Y, 0.03), new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.0 }))
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(0.04, OPEN_TOP - FLOOR_Y, 0.04), new THREE.MeshLambertMaterial({ color: 0xf2f2f2 })); edge.position.x = -side * OPEN_W / 4
+  d.add(pane, rim, edge); d.position.set(side * OPEN_W / 4, (OPEN_TOP + FLOOR_Y) / 2, FRONT_Z + 0.12); d.userData.side = side
+  room.add(d); return d
+})
+let doorOpen = 0, doorWant = 0
+// outside: pavement and a dusk sky
+plane(30, 16, new THREE.MeshLambertMaterial({ color: 0x8b8d98 }), 0, FLOOR_Y - 0.001, FRONT_Z + 8, -Math.PI / 2)
+pinkLight.position.set(-1.2, 2.0, -2.5); cyanLight.position.set(1.2, 2.0, -6.0)
+pinkLight.distance = cyanLight.distance = 9
+const frontLight = new THREE.PointLight(0xbfefff, 5, 7, 1.4); frontLight.position.set(0, 1.4, FRONT_Z + 1.8); scene.add(frontLight)
+// Machines stand along both walls: playable ones in door order, zig-zagging deeper; decoration fills the gaps.
+const SLOT_Z = [-0.9, -2.3, -3.7, -5.1, -6.5, -7.9]
+const slotFor = (i) => ({ x: (i % 2 ? 1 : -1) * 1.58, z: SLOT_Z[i], ry: i % 2 ? -Math.PI / 2 : Math.PI / 2 })
+const decoSlotFor = (i) => ({ x: (i % 2 ? -1 : 1) * 1.58, z: SLOT_Z[i], ry: i % 2 ? Math.PI / 2 : -Math.PI / 2 })
 // Machine interior in local metres: floor at y 0, x -0.5..0.5, z -0.45..0.45. Prize chute in the front-left corner.
 const IN = { x0: -0.5, x1: 0.5, z0: -0.45, z1: 0.45, top: 1.42 }
 const CHUTE = { x1: -0.18, z0: 0.12, wall: 0.17 }
@@ -333,8 +390,8 @@ function signTexture(neon) {
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace
   return tex
 }
-function cabinet(m, index) {
-  const g = new THREE.Group(); g.position.x = index * SPACING
+function cabinet(m, index, slot = slotFor(index)) {
+  const g = new THREE.Group(); g.position.set(slot.x, 0, slot.z); g.rotation.y = slot.ry
   const bodyMat = new THREE.MeshLambertMaterial({ color: m.body })
   const neon = NEON(m.neon)
   const add = (geo, mat, x, y, z) => { const mesh = new THREE.Mesh(geo, mat); mesh.position.set(x, y, z); g.add(mesh); return mesh }
@@ -375,8 +432,20 @@ function cabinet(m, index) {
   scene.add(g)
   return { group: g, plush: new THREE.Group(), m, index }
 }
-const cabinets = MACHINES.map(cabinet)
-for (const c of cabinets) c.group.add(c.plush)
+const cabinets = MACHINES.map((m, i) => cabinet(m, i))
+for (const c of cabinets) { c.group.add(c.plush); c.group.updateMatrixWorld(true) }
+// Decoration machines across the hall: a flat static pile, never played.
+let decos = []
+function buildDecos() { decos = MACHINES.map((m, i) => {
+  const c = cabinet(MACHINES[(i + 2) % MACHINES.length], -1, decoSlotFor(i)); c.group.add(c.plush)
+  const mm = MACHINES[(i + 2) % MACHINES.length], r = KIND_SIZE[mm.key][0]
+  for (let k = 0; k < 14; k++) {
+    const x = rnd(-0.42, 0.42), z = rnd(-0.38, 0.1)
+    const it = rollItem(mm), mesh = plushMesh(it.id, it.rarity, it.cap)
+    mesh.position.set(x, r * (k < 9 ? 1 : 2.4), z); mesh.rotation.set(rnd(-0.4, 0.4), rnd(-3, 3), rnd(-0.3, 0.3)); c.plush.add(mesh)
+  }
+  return c
+}) }
 
 // Claw: bridge rail on x, carriage, cable, head, three prongs.
 const claw = { x: HOME.x, z: HOME.z, y: CLAW_TOP, open: 0.2, tx: HOME.x, tz: HOME.z, group: new THREE.Group(), prongs: [], held: null, heldOffset: new THREE.Vector3(), sway: 0, swayV: 0 }
@@ -450,6 +519,7 @@ function showPile(cab, items) {
 }
 const piles = MACHINES.map((m, i) => { const items = packPile(m); showPile(cabinets[i], items); return items })
 const settled = new Set()
+buildDecos()
 function settle(index) { if (settled.has(index) || physics.active >= 0 && game.state === 'play') return; settled.add(index); buildPhysics(index); physics.world = null; physics.bodies = []; physics.active = -1 }
 
 // Physics for the machine being played.
@@ -538,9 +608,11 @@ const keyWeight = () => 1 + game.door * 0.1
 
 function startRun() {
   Object.assign(game, { door: 0, coins: START_COINS, clock: RUN_SECONDS, elapsed: 0, tools: [], magnet: 0, sticky: 0, hammer: 0, light: false, event: null, qte: null, nextEvent: 45, continued: false, won: false, reason: '', prizes: [] })
-  hide_('title'); hide_('result'); show('hud')
+  hide_('title'); hide_('result'); show('hud'); $('hud').classList.add('entering')
   $('got').innerHTML = ''
   enterDoor(0)
+  game.phase = 'enter'; game.phaseT = 0; doorWant = 1
+  $('dropBtn').disabled = true; setHint('')
   game.state = 'play'
   audio.unlock(); audio.music('play')
   platform.message('gameplay_started')
@@ -562,8 +634,7 @@ function enterDoor(index) {
   }
   cabinets[index].group.add(claw.group)
   startTry()
-  banner(`${t('door')} ${index + 1} / ${DOORS}`)
-  setHint(t('keyHint'))
+  if (index > 0) { banner(`${t('door')} ${index + 1} / ${DOORS}`); setHint(t('keyHint')) }
 }
 // A gold key and a glow ring riding on the key plush.
 const KEY_MAT = new THREE.MeshToonMaterial({ color: 0xffd23f, gradientMap: gradient, emissive: 0x8a6000, emissiveIntensity: 0.8 })
@@ -799,6 +870,13 @@ function showCard(id, rarity, isNew, coins) {
 function updateClaw(dt) {
   const speedAim = 0.42
   if (game.qte) updateQte(dt)
+  if (game.phase === 'enter') {
+    // Walk in through the glass door; it slides shut behind you.
+    game.phaseT += dt
+    if (game.phaseT > 1.5 && doorWant === 1) { doorWant = 0; audio.play('thud', 1, 0.55); audio.play('deny', 0.8, 0.7); buzz(60); banner(t('lockedIn'), true); game.shake = 0.3 }
+    if (game.phaseT > 3.0) { $('hud').classList.remove('entering'); startTry(); banner(`${t('door')} 1 / ${DOORS}`); setHint(t('keyHint')) }
+    return
+  }
   if (game.phase === 'transit') {
     game.phaseT += dt
     audio.hum(0, 90)
@@ -917,7 +995,7 @@ function updatePhysics(dt) {
   syncPile()
 }
 function updateRun(dt) {
-  if (game.phase !== 'transit') { game.clock -= dt; game.elapsed += dt }
+  if (game.phase !== 'transit' && game.phase !== 'enter') { game.clock -= dt; game.elapsed += dt }
   if (game.clock <= 0) { game.clock = 0; fail('dawn'); return }
   updateEvent(dt)
   // Lights: dim in a blackout (the flashlight keeps half), pulse the key halo.
@@ -930,27 +1008,39 @@ function updateRun(dt) {
 
 // ---------------------------------------------------------------- view
 const view = { x: 0, y: 1.5, z: 4, lx: 0, ly: 0.6, lz: 0, yaw: 0 }
+const PV = new THREE.Vector3(), PL = new THREE.Vector3()
 function poseFor(mode, index) {
   const aspect = camera.aspect, fov = THREE.MathUtils.degToRad(camera.fov)
   const tanV = Math.tan(fov / 2), tanH = tanV * aspect
-  const cx = index * SPACING
   if (mode === 'play') {
-    // The camera orbits the machine by view.yaw (0 = front, larger = more from the right side).
+    // The camera orbits the machine by view.yaw (0 = front, larger = more from its right side), in the machine's own frame.
     const halfW = 0.66, halfH = 0.98
     const dist = Math.max(halfW / tanH, halfH / tanV) + 0.55
-    return { x: cx + Math.sin(view.yaw) * dist, y: 0.95 + (aspect < 0.8 ? 0.05 : 0.1), z: Math.cos(view.yaw) * dist, lx: cx, ly: aspect < 0.8 ? 0.42 : 0.55, lz: 0 }
+    const g = cabinets[index].group
+    PV.set(Math.sin(view.yaw) * dist, 0.95 + (aspect < 0.8 ? 0.05 : 0.1), Math.cos(view.yaw) * dist); g.localToWorld(PV)
+    PL.set(0, aspect < 0.8 ? 0.42 : 0.55, 0); g.localToWorld(PL)
+    return { x: PV.x, y: PV.y, z: PV.z, lx: PL.x, ly: PL.y, lz: PL.z }
   }
-  const halfW = aspect < 0.8 ? 0.95 : 1.6, halfH = 1.55
-  const dist = Math.max(halfW / tanH, halfH / tanV) + 0.6
-  return { x: cx, y: 1.0, z: dist, lx: cx, ly: aspect < 0.8 ? 0.15 : 0.35, lz: 0 }
+  if (mode === 'door') return { x: 0, y: 0.75, z: FRONT_Z - 0.6, lx: -0.6, ly: 0.55, lz: -2.4 }
+  // outside the shop: the sign and the open door, the bright hall behind it
+  const halfW = aspect < 0.8 ? 2.05 : 2.7, halfH = 2.35
+  const dist = Math.max(halfW / tanH, halfH / tanV)
+  const cy = aspect < 0.8 ? 0.55 : 1.05
+  return { x: 0, y: cy, z: FRONT_Z + dist, lx: 0, ly: cy, lz: FRONT_Z }
 }
 function updateView(dt) {
   const mode = game.state === 'play' || game.state === 'pause' || game.state === 'result' ? 'play' : 'shop'
   // After the drop the camera eases back to the front to watch the claw carry the prize to the chute.
   const wantYaw = mode === 'play' && (game.phase === 'aim' || game.phase === 'down' || game.phase === 'close') && game.state !== 'result' ? (game.yawTarget ?? 0.25) : 0
   view.yaw = lerp(view.yaw, wantYaw, 1 - Math.exp(-dt * 2.2))
-  const p = poseFor(mode, mode === 'shop' ? shopIndex : game.machine)
-  for (const c of cabinets) c.group.visible = mode === 'shop' || c.index === game.machine
+  const entering = mode === 'play' && game.phase === 'enter'
+  const p = entering && game.phaseT < 1.7 ? poseFor('door') : poseFor(mode, game.machine)
+  const inHall = mode === 'shop' || entering && game.phaseT < 1.7
+  for (const c of cabinets) c.group.visible = inHall || c.index === game.machine
+  for (const c of decos) c.group.visible = inHall
+  room.visible = true
+  doorOpen = lerp(doorOpen, doorWant, 1 - Math.exp(-dt * 5))
+  for (const d of doors) d.position.x = d.userData.side * (OPEN_W / 4 + doorOpen * OPEN_W * 0.48)
   const k = 1 - Math.exp(-dt * 4)
   for (const n of ['x', 'y', 'z', 'lx', 'ly', 'lz']) view[n] = lerp(view[n], p[n], k)
   let sx = 0, sy = 0
@@ -1089,6 +1179,7 @@ function renderSettings(host) {
   row(t('language'), langBtn)
 }
 function goShop() {
+  doorWant = 1
   game.state = 'shop'
   hide_('result'); hide_('panel'); hide_('pause'); hide_('hud'); show('title')
   shopIndex = 0
@@ -1189,7 +1280,7 @@ async function boot() {
   game.machine = shopIndex
   settle(shopIndex)
   resize(); sync()
-  const p = poseFor('shop', shopIndex); Object.assign(view, p)
+  const p = poseFor('shop', 0); Object.assign(view, p); doorWant = doorOpen = 1
   bar.style.width = '100%'
   requestAnimationFrame((n) => { last = n; frame(n) })
   requestAnimationFrame(() => {

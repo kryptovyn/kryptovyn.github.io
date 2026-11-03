@@ -144,3 +144,4 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 .newBest { font-size: 30px; color: var(--sun); -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; animation: beat .8s infinite; }
 #resPrizes { flex-direction: column; align-items: center; }
 .tools3 { grid-template-columns: 1fr; }
+#hud.entering > :not(.banner) { visibility: hidden; }
