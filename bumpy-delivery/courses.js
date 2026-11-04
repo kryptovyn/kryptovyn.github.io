@@ -45,7 +45,7 @@ export const COURSES = [
   { theme: 'mountain', build: (b) => b.obj('brokenBridge', { x: 12 }).flat(6).slope(12, 2.6).flat(3).lift(4.8, 4.6).flat(8).obj('wrecker', { dx: 2 }).flat(10).slope(16, -5).flat(5).finish() },
   { theme: 'snow', build: (b) => b.flat(5).ice(18, -4).flat(3).ramp(6, 1.1).gap(6.5, -0.5).slope(11, -3.3).obj('rocks').bumps(4, 2.2, 0.3).flat(5).finish() },
   { theme: 'mountain', build: (b) => b.flat(5).collapse(16).flat(5).obj('windmill', { dx: 4 }).flat(10).hill(11, 2.6).obj('barrels', { at: 0, h: 0, back: true }).flat(4).finish() },
-  { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 1.95 }).bumps(4, 2.4, 0.5).flat(4).finish() },
+  { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 2.3 }).bumps(4, 2.4, 0.5).flat(4).finish() },
   { theme: 'city', build: (b) => b.flat(4).slope(18, -4).flat(2).ramp(7, 2.1).gap(7.5, -0.6).slope(8, -2.8).obj('cars', { back: 8 }).flat(3).obj('boxes', { n: 10 }).flat(7).bumps(4).flat(3).obj('wrecker', { dx: 2 }).flat(10).finish().obj('wedding', { x: b.finishX + 9 }) },
 ]
 
@@ -237,8 +237,23 @@ function makeObject(world, o, course) {
     world.createJoint(new pl.RevoluteJoint({ enableLimit: true, lowerAngle: -0.3, upperAngle: 0.3 }, pivot, plank, V(cx, cy)))
     const m = add(box(o.L, 0.22, 2.2, WOOD)); m.add(at(box(o.L, 0.04, 2.21, 0xffd23f), 0, 0.09))
     const tri = add(mesh(new THREE.ConeGeometry(0.6, 0.7, 3), 0x8a8fa8)); tri.position.set(cx, cy - 0.3, 0)
+    // A small wedge up to the plank's end: the bare end is a step a wheel hits like a kerb.
+    const nearX = cx - (o.L / 2) * Math.cos(Math.asin(Math.min(1, 0.55 / (o.L / 2))))
+    const wedge = world.createBody({ type: 'static' })
+    wedge.createFixture(new pl.Polygon([V(nearX - 1.1, o.y), V(nearX + 0.05, o.y), V(nearX + 0.05, o.y + 0.27)]), { friction: 0.9 })
+    wedge.setUserData({ prop: true })
+    const ws = new THREE.Shape(); ws.moveTo(-1.1, 0); ws.lineTo(0.05, 0); ws.lineTo(0.05, 0.27); ws.lineTo(-1.1, 0)
+    const wg = new THREE.ExtrudeGeometry(ws, { depth: 2.2, bevelEnabled: false }); wg.translate(0, 0, -1.1)
+    const wm = add(mesh(wg, 0x9a5f35)); wm.position.set(nearX, o.y, 0)
     const links = [linkMesh(plank, m)]
-    return { span: [o.x, o.x + o.L], update: () => syncLinks(links) }
+    // With nobody on it the plank settles back with its near end down, so a truck that slid off
+    // backwards never faces the raised end as a wall.
+    const rest = Math.asin(Math.min(1, 0.55 / (o.L / 2)))
+    return { span: [o.x, o.x + o.L], update: (dt, ctx) => {
+      const tx = ctx.truckX()
+      if (tx < o.x - 1.6 || tx > o.x + o.L + 1.6) plank.applyTorque((rest - plank.getAngle()) * 60 - plank.getAngularVelocity() * 14, true)
+      syncLinks(links)
+    } }
   }
   if (o.kind === 'rope') {
     const x0 = o.x, y0 = o.y, x1 = o.x + o.L, y1 = o.y + o.dy, n = Math.round(o.L / 0.75), w = o.L / n
@@ -384,6 +399,12 @@ function makeObject(world, o, course) {
           }
         }
         syncLinks(live)
+        // Landed rocks crumble away, so they hit you on the way down but never wall the road off.
+        if (since > 3.2) for (let i = live.length - 1; i >= 0; i--) {
+          const k = Math.max(0, 1 - (since - 3.2 - i * 0.12) / 0.5)
+          live[i].mesh.scale.setScalar(k)
+          if (k <= 0) { world.destroyBody(live[i].body); live[i].mesh.visible = false; live.splice(i, 1) }
+        }
       },
     }
   }

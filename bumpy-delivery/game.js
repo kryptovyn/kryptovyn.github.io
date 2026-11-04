@@ -325,9 +325,14 @@ function banner(text, good = false) {
 function pop(text, id, x, y) {
   const v = new THREE.Vector3(x, y, 0).project(camera)
   const el = document.createElement('div'); el.className = 'pop'
-  el.style.left = clamp((v.x * 0.5 + 0.5) * 100, 12, 88) + '%'; el.style.top = clamp((-v.y * 0.5 + 0.5) * 100, 18, 70) + '%'
   el.innerHTML = (id ? `<img src="${thumbs[id] || ''}" alt="">` : '') + `<span>${text}</span>`
-  $('pops').appendChild(el); setTimeout(() => el.remove(), 1300)
+  $('pops').appendChild(el)
+  // Keep the whole label on screen and lift it above any label still showing at the same spot.
+  const W = window.innerWidth, H = window.innerHeight, w = el.offsetWidth + (id ? 42 : 0), h = 44
+  let cx = clamp((v.x * 0.5 + 0.5) * W, w / 2 + 8, W - w / 2 - 8), cy = clamp((-v.y * 0.5 + 0.5) * H, H * 0.18, H * 0.7)
+  for (const o of [...$('pops').children]) if (o !== el && Math.abs(o._cx - cx) < (w + o.offsetWidth) / 2 && Math.abs(o._cy - cy) < h + 4) cy = o._cy - h - 6
+  el._cx = cx; el._cy = cy; el.style.left = cx + 'px'; el.style.top = cy + 'px'
+  setTimeout(() => el.remove(), 1300)
 }
 
 // ---------------------------------------------------------------- run
@@ -466,6 +471,7 @@ function courseClear() {
 }
 function oops(lostTier, why = 'oops') {
   if (run.phase !== 'drive') return
+  if (game.state === 'sim') simNote(why)
   run.phase = 'oops'; run.phaseT = 0
   audio.play('deny', 0.8); buzz(80); shake(0.3)
   banner(t(why))
@@ -560,6 +566,7 @@ function fail(reason) {
   if (run.phase === 'fail' || run.phase === 'done') return
   run.phase = 'fail'; run.phaseT = 0; run.reason = reason
   run.failX = truck.chassis ? truck.chassis.getPosition().x : course.startX
+  if (game.state === 'sim') simNote('end-' + reason)
   audio.play('lose', 0.9); audio.engine(0, 50)
   banner(reason === 'time' ? t('timeUp') : reason === 'fell' ? t('fell') : t('cakeGone'))
   if (game.state === 'sim') return
@@ -605,7 +612,7 @@ function showResult(won) {
   $('resCake').innerHTML = `<img src="${cakeThumb(won ? run.cakeTiers : 0)}" alt="">`
   $('resItems').innerHTML = run.items.filter((e) => e.id !== CAKE).map((e) => `<span class="${e.alive ? '' : 'gone'}"><img src="${thumbs[e.id]}" alt=""></span>`).join('')
   $('resTimeL').textContent = won ? t('time') : t('course'); $('resTime').textContent = won ? fmt(run.time) : `${run.course + 1} / ${COURSES.length}`
-  $('resBestL').textContent = save.bestTime ? t('best') : t('farthest'); $('resBest').textContent = save.bestTime ? fmt(save.bestTime) : `${save.reach} / ${COURSES.length}`
+  $('resBestL').textContent = save.bestTime ? t('best') : t('farthest'); $('resBest').textContent = save.bestTime ? fmt(save.bestTime) : `${Math.max(save.reach, run.course + 1)} / ${COURSES.length}`
   $('resNew').textContent = t('newBest'); $('resNew').classList.toggle('hide', !fresh)
   const opened = TRUCKS.filter((d) => truckOpen(d) && !(run.openAtStart || []).includes(d.id))
   $('resUnlock').textContent = opened.length ? `${t('newTruck')} ${opened.map((d) => t('truck_' + d.id)).join(', ')}` : ''
@@ -1006,7 +1013,9 @@ boot()
 // Difficulty is about throttle control: a road should be cleared by careful forward/back driving,
 // and holding forward alone should not be enough on the later roads. simAll() drives every road
 // with several driving styles, without drawing, and reports what each style achieved.
-const sim = { policy: null }
+const sim = { policy: null, notes: [] }
+// Pass test log: what happened where, so a judgement bug shows up as many runs failing at one spot.
+function simNote(kind) { const p = truck.chassis.getPosition(); sim.notes.push(`${kind}@${Math.round(p.x)},${Math.round(p.y)}${onStructure() ? ':on' : ''}`) }
 function simInput(pol) {
   const c = truck.chassis, a = wrapAngle(c.getAngle()), v = c.getLinearVelocity(), x = c.getPosition().x
   input.gas = input.back = false
@@ -1047,7 +1056,8 @@ function simCourse(index, pol, ids) {
   run.phase = 'idle'
   const tp = truck.chassis.getPosition()
   const tr = sim.tramp || 0; sim.tramp = 0; const lostAt = (sim.lost || []).join(' '); sim.lost = []
-  return { at: `${Math.round(tp.x)},${Math.round(tp.y)} tr${tr} ${sim.tv}`, lostAt, course: index + 1, style: pol.name, out, time: Math.round(t * 10) / 10, cake: run.cakeTiers, items: run.items.filter((e) => e.alive && e.id !== CAKE).length, oops: oopsN }
+  const notes = sim.notes; sim.notes = []
+  return { notes, at: `${Math.round(tp.x)},${Math.round(tp.y)} tr${tr} ${sim.tv}`, lostAt, course: index + 1, style: pol.name, out, time: Math.round(t * 10) / 10, cake: run.cakeTiers, items: run.items.filter((e) => e.alive && e.id !== CAKE).length, oops: oopsN }
 }
 async function simAll(ids = [CAKE, 'eggs', 'vase', 'watermelon', 'balloons'], only = null, truckId = 'bakery') {
   const rows = [], keep = truckDef.id
