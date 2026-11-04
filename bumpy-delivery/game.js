@@ -408,7 +408,7 @@ function announceCargo() {
   run.phaseT = Math.min(run.phaseT, -0.6) // wait for it to land before GO
   const p = it.body.getPosition()
   pop(t('newCargo'), it.entry.id, p.x, p.y + 0.6); audio.play('coin', 0.7, 1.4)
-  setTimeout(() => { if (it.alive) { const q = it.body.getPosition(); audio.play('thud', 0.8, 1.1); shake(0.15); burst(q.x, q.y, [0xffffff, 0xfff1dc], 10, 2.5, 1.5) } }, 780)
+  setTimeout(() => { if (it.alive) { audio.play('thud', 0.8, 1.1); shake(0.15) } }, 780)
 }
 function nextCourse() {
   const n = run.course + 1
@@ -880,7 +880,7 @@ for (const [id, keyName] of [['gasBtn', 'gas'], ['backBtn', 'back']]) {
 }
 window.addEventListener('keydown', (e) => {
   input.keys.add(e.code)
-  if (e.code === 'Escape' || e.code === 'KeyP') { if (game.state === 'play') pauseGame(); else if (game.state === 'pause') resumeGame() }
+  if (e.code === 'KeyP') { if (game.state === 'play') pauseGame(); else if (game.state === 'pause') resumeGame() }
   if ((e.code === 'Space' || e.code === 'Enter') && run.story) { e.preventDefault(); run.story.next() }
 })
 window.addEventListener('keyup', (e) => input.keys.delete(e.code))

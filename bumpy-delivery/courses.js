@@ -13,8 +13,8 @@ export const THEMES = {
 
 class Builder {
   constructor() {
-    this.chains = []; this.objs = []; this.x = -16; this.y = 0
-    this.cur = { pts: [[-16, 9, true], [-16, 0]], ice: false }; this.chains.push(this.cur); this.flat(18)
+    this.chains = []; this.objs = []; this.x = -40; this.y = 0
+    this.cur = { pts: [[-40, 9, true], [-40, 0]], ice: false }; this.chains.push(this.cur); this.flat(42)
   }
   newChain(ice = false) { this.cur = { pts: [[this.x, this.y]], ice }; this.chains.push(this.cur) }
   to(x, y) { this.cur.pts.push([x, y]); this.x = x; this.y = y; return this }
@@ -160,12 +160,12 @@ export function buildCourse(world, index) {
     return null
   }
   // Scenery behind the road: a near row, a meadow band with a far row on it, and fans by the road.
-  for (let x = -14; x < maxX; x += rnd(2.4, 4.6)) {
+  for (let x = -38; x < maxX; x += rnd(2.4, 4.6)) {
     const y = groundY(x); if (y === null) continue
     const d = decorPiece(pick(theme.decor), def.theme); d.position.set(x, y, rnd(-5.5, -3)); d.rotation.y = rnd(-0.3, 0.3); group.add(d)
   }
   const meadowY = (x) => { let n = 0, sum = 0; for (let k = -8; k <= 8; k += 2) { const y = groundY(x + k); if (y !== null) { sum += y; n++ } } return n ? sum / n : null }
-  const meadow = new THREE.Shape(), mx0 = -30, mx1 = maxX + 30, base = minY - 12
+  const meadow = new THREE.Shape(), mx0 = -50, mx1 = maxX + 30, base = minY - 12
   meadow.moveTo(mx0, base)
   let lastY = groundY(-6) ?? 0
   for (let x = mx0; x <= mx1; x += 2) { const y = meadowY(x); if (y !== null) lastY = y; meadow.lineTo(x, lastY + 0.6 + Math.sin(x * 0.15) * 0.5) }
@@ -173,7 +173,7 @@ export function buildCourse(world, index) {
   const mcol = new THREE.Color(theme.top).lerp(new THREE.Color(theme.far), 0.45).getHex()
   const mm = mesh(new THREE.ShapeGeometry(meadow), mcol); mm.position.z = -9; group.add(mm)
   lastY = groundY(-6) ?? 0
-  for (let x = -24; x < maxX + 20; x += rnd(2.2, 4.2)) {
+  for (let x = -46; x < maxX + 20; x += rnd(2.2, 4.2)) {
     const y = meadowY(x); if (y !== null) lastY = y
     const d = decorPiece(pick(theme.decor), def.theme); d.scale.setScalar(rnd(1.2, 1.6)); d.position.set(x, lastY + 0.4 + Math.sin(x * 0.15) * 0.5, rnd(-12, -9.5)); d.rotation.y = rnd(-0.4, 0.4); group.add(d)
   }
@@ -190,7 +190,7 @@ export function buildCourse(world, index) {
     const y = groundY(x); if (y === null) continue
     const d = decorPiece(def.theme === 'city' ? 'flower' : def.theme === 'snow' ? 'rock' : 'flower', def.theme); d.position.set(x, y - 0.05, rnd(2.3, 3.2)); d.scale.setScalar(0.7); group.add(d)
   }
-  group.add(farHills(theme, -16, maxX))
+  group.add(farHills(theme, -40, maxX))
   for (let i = 0; i < 8; i++) { const c = new THREE.Group(); for (let k = 0; k < 4; k++) c.add(at(ball(rnd(0.9, 1.6), 0xffffff), k * 1.3, rnd(-0.3, 0.4))); c.position.set(rnd(-10, maxX), rnd(9, 16), rnd(-28, -18)); group.add(c) }
 
   const course = { index, theme, themeName: def.theme, group, groundY, finishX: b.finishX, startX: -6, startY: groundY(-6), killY: minY - 5, objs: [], endX: maxX }
