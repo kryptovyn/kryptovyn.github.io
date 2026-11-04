@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Bumpy Delivery</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="loading"><div class="brand">BUMPY<br>DELIVERY</div><div class="bar"><i id="loadbar"></i></div></div>
+
+<div id="hud" class="hide">
+  <div class="stats"><b id="courseText"></b><div class="cargo" id="cargo"></div></div>
+  <div class="clock" id="clock">5:00</div>
+  <button class="round" id="pauseBtn" aria-label="Pause"><span class="ico-pause"></span></button>
+  <div class="banner" id="banner"></div>
+  <div class="pops" id="pops"></div>
+  <button class="pedal back" id="backBtn" aria-label="Back"><span class="arr"></span></button>
+  <button class="pedal gas" id="gasBtn" aria-label="Gas"><span class="arr"></span><em id="holdTip"></em></button>
+</div>
+
+<div id="story" class="hide">
+  <div class="bubble"><b id="who"></b><p id="line"></p></div>
+  <button class="sub ghost skip" id="skipBtn"></button>
+</div>
+
+<section id="title" class="screen hide">
+  <div class="logo">BUMPY<br>DELIVERY</div>
+  <p class="tagline" id="tagline"></p>
+  <div class="bestBox" id="bestBox"></div>
+  <button class="go pulse" id="playBtn"></button>
+  <div class="row"><button class="round" id="setBtn" aria-label="Settings"><span class="ico-gear"></span></button></div>
+</section>
+
+<section id="result" class="screen hide">
+  <h2 id="resTitle"></h2>
+  <div class="cakeBig" id="resCake"></div>
+  <div class="prizes" id="resItems"></div>
+  <div class="resLine"><span id="resTimeL"></span><b id="resTime"></b></div>
+  <div class="resLine"><span id="resBestL"></span><b id="resBest"></b></div>
+  <div class="newBest hide" id="resNew"></div>
+  <button class="sub ad" id="contBtn"></button>
+  <button class="go" id="againBtn"></button>
+  <button class="sub ghost" id="homeBtn"></button>
+</section>
+
+<section id="panel" class="screen hide">
+  <h2 id="panelTitle"></h2>
+  <div id="panelBody"></div>
+  <button class="go" id="panelClose"></button>
+</section>
+
+<section id="pause" class="screen hide">
+  <h2 id="pauseTitle"></h2>
+  <button class="go" id="resumeBtn"></button>
+  <button class="sub" id="quitBtn"></button>
+</section>
+
+<script>
+(function () {
+  var started = false
+  function go() { if (started) return; started = true; var s = document.createElement('script'); s.type = 'module'; s.src = 'game.js'; document.body.appendChild(s) }
+  if (/[?&]nobridge/.test(location.search)) { window.__noBridge = true; go(); return }
+  function local() { var s = document.createElement('script'); s.src = 'playgama-bridge.js'; s.onload = go; s.onerror = go; document.head.appendChild(s) }
+  var cdn = document.createElement('script'), done = false
+  var timer = setTimeout(function () { if (!done) { done = true; local() } }, 2000)
+  cdn.src = 'https://bridge.playgama.com/v2/stable/playgama-bridge.js'
+  cdn.onload = function () { if (!done) { done = true; clearTimeout(timer); go() } }
+  cdn.onerror = function () { if (!done) { done = true; clearTimeout(timer); local() } }
+  document.head.appendChild(cdn)
+})()
+</script>
+</body>
+</html>

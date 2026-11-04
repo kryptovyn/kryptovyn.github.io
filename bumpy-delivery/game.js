@@ -1,0 +1,851 @@
+// Bumpy Delivery: drive a wobbly bakery truck over 10 roads and get the wedding cake there.
+import { THREE, pl, V, clamp, lerp, rnd, pick, mat, mesh, box, ball, cyl, at, critter } from './core.js'
+import { TEXT, LANGUAGES } from './text.js'
+import { KINDS, CAKE, PICKABLE } from './cargo.js'
+import { COURSES, LIMIT, buildCourse, skyTexture } from './courses.js'
+
+const $ = (id) => document.getElementById(id)
+const Q = new URLSearchParams(location.search)
+const BOT = Q.has('bot')
+const wrapAngle = (a) => ((((a + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI
+const show = (id) => $(id).classList.remove('hide')
+const hide = (id) => $(id).classList.add('hide')
+
+const LANG_KEYS = Object.keys(LANGUAGES)
+let lang = 'en'
+const t = (key) => TEXT[lang][key] ?? TEXT.en[key] ?? key
+
+// ---------------------------------------------------------------- save
+const SAVE_KEY = 'bumpy_delivery'
+const save = { bestTime: 0, bestCourse: 0, runs: 0, clears: 0, music: 0.6, sfx: 0.9, shake: 1, lang: '', seenStory: 0 }
+let saveTimer = 0
+function writeSave() {
+  clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    const text = JSON.stringify(save)
+    if (window.bridge?.storage) window.bridge.storage.set(SAVE_KEY, text).catch(() => {})
+    else { try { localStorage.setItem(SAVE_KEY, text) } catch {} }
+  }, 300)
+}
+async function readSave() {
+  let text = null
+  try {
+    if (window.bridge?.storage) text = await window.bridge.storage.get(SAVE_KEY, false)
+    else text = localStorage.getItem(SAVE_KEY)
+  } catch {}
+  if (typeof text !== 'string' || !text) return
+  try { Object.assign(save, JSON.parse(text)) } catch {}
+}
+
+// ---------------------------------------------------------------- platform
+const platform = {
+  ready: false, audioOn: true, paused: false, adOpen: false,
+  message(name) { try { window.bridge?.platform?.sendMessage(name) } catch {} },
+  async init() {
+    const bridge = window.bridge
+    if (!bridge || window.__noBridge) return
+    try {
+      bridge.engine = 'javascript'
+      await bridge.initialize()
+      this.ready = true
+      this.audioOn = bridge.platform.isAudioEnabled !== false
+      const events = bridge.EVENT_NAME
+      bridge.platform.on(events.AUDIO_STATE_CHANGED, (on) => { this.audioOn = on; applyVolume() })
+      bridge.platform.on(events.PAUSE_STATE_CHANGED, (on) => { this.paused = on; applyVolume(); if (on) pauseGame() })
+      bridge.advertisement.on(events.INTERSTITIAL_STATE_CHANGED, (s) => this.onAd(s))
+      bridge.advertisement.on(events.REWARDED_STATE_CHANGED, (s) => this.onReward(s))
+    } catch (error) { console.warn('bridge', error) }
+  },
+  onAd(state) {
+    if (state === 'opened') { this.adOpen = true; applyVolume() }
+    if (state === 'closed' || state === 'failed') { this.adOpen = false; applyVolume() }
+  },
+  rewardDone: null, rewarded: false,
+  onReward(state) {
+    if (state === 'opened') { this.adOpen = true; applyVolume() }
+    if (state === 'rewarded') this.rewarded = true
+    if (state === 'closed' || state === 'failed') {
+      this.adOpen = false; applyVolume()
+      const done = this.rewardDone; this.rewardDone = null
+      done?.(this.rewarded); this.rewarded = false
+    }
+  },
+  // At most one full-screen ad per 3 minutes; a rewarded ad the player chose also resets the clock.
+  lastAd: Date.now(),
+  interstitial() {
+    if (Date.now() - this.lastAd < 180000) return
+    this.lastAd = Date.now()
+    try { if (this.ready) window.bridge.advertisement.showInterstitial() } catch {}
+  },
+  rewardedAd(done) {
+    if (!this.ready) { done(false); return }
+    this.rewardDone = done; this.rewarded = false; this.lastAd = Date.now()
+    try { window.bridge.advertisement.showRewarded() } catch { this.rewardDone = null; done(false) }
+  },
+}
+
+// ---------------------------------------------------------------- sound
+const SOUNDS = ['click', 'thud', 'smash', 'soft', 'land', 'boom', 'wood', 'win', 'lose', 'finish', 'coin', 'creak', 'deny']
+const audio = {
+  ctx: null, buffers: {}, musicGain: null, sfxGain: null, master: null, source: null, current: '', wanted: '', motor: null, last: {},
+  unlock() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return }
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (!Ctx) return
+    this.ctx = new Ctx()
+    this.master = this.ctx.createGain(); this.master.connect(this.ctx.destination)
+    this.musicGain = this.ctx.createGain(); this.musicGain.connect(this.master)
+    this.sfxGain = this.ctx.createGain(); this.sfxGain.connect(this.master)
+    // A small engine: two detuned saws through a low-pass; pitch follows the wheels.
+    const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 480
+    this.motor = this.ctx.createGain(); this.motor.gain.value = 0
+    this.oscs = [0, 9].map((cents) => { const o = this.ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 50; o.detune.value = cents * 10; o.connect(filter); o.start(); return o })
+    filter.connect(this.motor); this.motor.connect(this.sfxGain)
+    applyVolume()
+    for (const n of SOUNDS) this.load(n)
+    this.load('lobby').then(() => this.music(this.wanted))
+    this.load('drive').then(() => this.music(this.wanted))
+  },
+  async load(name) {
+    try {
+      const data = await (await fetch(`audio/${name}.ogg`)).arrayBuffer()
+      this.buffers[name] = await this.ctx.decodeAudioData(data)
+    } catch (error) { console.warn('sound', name, error) }
+  },
+  play(name, volume = 1, rate = 1) {
+    if (!this.ctx || !this.buffers[name]) return
+    const now = performance.now()
+    if (now - (this.last[name] || 0) < 70) return
+    this.last[name] = now
+    const source = this.ctx.createBufferSource(); source.buffer = this.buffers[name]; source.playbackRate.value = rate
+    const gain = this.ctx.createGain(); gain.gain.value = volume
+    source.connect(gain); gain.connect(this.sfxGain); source.start()
+  },
+  engine(level, pitch) {
+    if (!this.motor) return
+    this.motor.gain.setTargetAtTime(level * 0.06, this.ctx.currentTime, 0.06)
+    for (const o of this.oscs) o.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.08)
+  },
+  music(name) {
+    this.wanted = name
+    if (!this.ctx || !this.buffers[name] || this.current === name) return
+    this.source?.stop()
+    const source = this.ctx.createBufferSource(); source.buffer = this.buffers[name]; source.loop = true
+    source.connect(this.musicGain); source.start(); this.source = source; this.current = name
+  },
+}
+function applyVolume() {
+  if (!audio.ctx) return
+  const silent = !platform.audioOn || platform.adOpen || platform.paused || document.hidden
+  audio.master.gain.value = silent ? 0 : 1
+  audio.musicGain.gain.value = save.music * 0.45
+  audio.sfxGain.gain.value = save.sfx
+}
+document.addEventListener('visibilitychange', () => { applyVolume(); if (document.hidden) pauseGame() })
+const buzz = (ms) => { if (save.shake && navigator.userActivation?.hasBeenActive) try { navigator.vibrate?.(ms) } catch {} }
+
+// ---------------------------------------------------------------- scene
+const canvas = $('view')
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
+renderer.outputColorSpace = THREE.SRGBColorSpace
+const scene = new THREE.Scene()
+const camera = new THREE.PerspectiveCamera(30, 1, 0.5, 300)
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a7a99, 1.7))
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-6, 14, 10); scene.add(sun)
+
+// ---------------------------------------------------------------- physics world
+let world = null, course = null
+const events = [], hits = []
+const wm = new pl.WorldManifold()
+function newWorld() {
+  world = new pl.World({ gravity: V(0, -10) })
+  // Impact speed: how fast two things close in along the contact normal, measured before the solver.
+  world.on('pre-solve', (contact) => {
+    const A = contact.getFixtureA().getBody(), B = contact.getFixtureB().getBody()
+    const ua = A.getUserData(), ub = B.getUserData()
+    if (!(ua?.item || ub?.item || ua?.part === 'chassis' || ub?.part === 'chassis')) return
+    if (!contact.getManifold().pointCount) return
+    contact.getWorldManifold(wm)
+    const pt = wm.points[0], n = wm.normal
+    const va = A.getLinearVelocityFromWorldPoint(pt), vb = B.getLinearVelocityFromWorldPoint(pt)
+    const dv = -((vb.x - va.x) * n.x + (vb.y - va.y) * n.y)
+    if (dv < 1.6) return
+    // Each side feels the speed change of an inelastic hit: a light thing barely hurts a heavy one.
+    const mass = (b) => (b.isDynamic() ? b.getMass() : 1e6)
+    const ma = mass(A), mb = mass(B)
+    for (const [u, o, m, mo] of [[ua, ub, ma, mb], [ub, ua, mb, ma]]) {
+      const felt = (dv * mo) / (m + mo)
+      if (u?.item && felt > 1.6) events.push({ kind: 'hit', item: u.item, dv: felt })
+      else if (u?.part === 'chassis' && !o?.item) events.push({ kind: 'land', dv: felt })
+    }
+  })
+  world.on('begin-contact', (contact) => {
+    const fa = contact.getFixtureA(), fb = contact.getFixtureB()
+    for (const [f, o] of [[fa, fb], [fb, fa]]) {
+      const u = f.getUserData(), other = o.getBody().getUserData()
+      if (!u || !other) continue
+      if (u.tramp && (other.part || other.item)) events.push({ kind: 'tramp' })
+      if (u.plank && (other.part || other.item)) u.plank.touched = true
+    }
+  })
+  events.length = 0
+}
+function disposeGroup(g) {
+  g.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material?.map) { o.material.map.dispose(); o.material.dispose() } })
+}
+
+// ---------------------------------------------------------------- truck
+const TRUCK = { speed: 20, torque: 15, air: 9, hz: 4.2, damp: 0.72, wheelR: 0.42 }
+const BED = { x0: -1.3, x1: 0.5, floor: 0.1 }
+const truck = { chassis: null, wheels: [], joints: [], group: null, wheelMeshes: [] }
+function truckMesh() {
+  const g = new THREE.Group()
+  const cream = 0xfff1dc, pink = 0xff8fb1, red = 0xff4f6d
+  g.add(at(box(2.8, 0.22, 1.3, cream), 0, 0))
+  g.add(at(box(2.82, 0.24, 1.32, pink), 0, -0.2))
+  for (const z of [-0.62, 0.62]) g.add(at(box(1.84, 0.22, 0.06, red), -0.4, 0.2, z))
+  g.add(at(box(0.12, 0.6, 1.3, red), -1.36, 0.38))
+  const cab = new THREE.Group(); cab.position.set(0.95, 0.5, 0); g.add(cab)
+  cab.add(box(0.9, 0.84, 1.28, pink)); cab.add(at(box(0.92, 0.12, 1.3, cream), 0, 0.42))
+  cab.add(at(box(0.5, 0.36, 1.3, 0xbfefff), 0.08, 0.12)); cab.add(at(box(0.06, 0.34, 1.0, 0xbfefff), 0.46, 0.12))
+  const dog = critter('dog', 0xffe0b0, { cap: 0xff4f6d }); dog.scale.setScalar(0.42); dog.position.set(0.02, -0.38, 0); dog.rotation.y = Math.PI / 2; cab.add(dog)
+  g.add(at(box(0.1, 0.12, 0.3, 0xfff3a8), 1.42, 0.02, 0.45)); g.add(at(box(0.1, 0.12, 0.3, 0xfff3a8), 1.42, 0.02, -0.45))
+  scene.add(g)
+  const wheels = []
+  for (let i = 0; i < 2; i++) {
+    const w = new THREE.Group()
+    const tyre = cyl(TRUCK.wheelR, TRUCK.wheelR, 0.36, 0x2b1d3a, 18); tyre.rotation.x = Math.PI / 2; w.add(tyre)
+    const hub = cyl(0.2, 0.2, 0.38, 0xffd23f, 10); hub.rotation.x = Math.PI / 2; w.add(hub)
+    w.add(at(box(0.36, 0.06, 0.39, 0xffffff), 0, 0))
+    scene.add(w); wheels.push(w)
+  }
+  return { g, wheels }
+}
+function makeTruck(x, y) {
+  const c = world.createBody({ type: 'dynamic', position: V(x, y), angularDamping: 0.25 })
+  c.createFixture(new pl.Box(1.4, 0.1, V(0, 0)), { density: 3.2, friction: 0.7 })
+  c.createFixture(new pl.Box(1.4, 0.12, V(0, -0.22)), { density: 3.2, friction: 0.6 })
+  c.createFixture(new pl.Box(0.06, 0.3, V(-1.36, 0.38)), { density: 1, friction: 0.7 })
+  c.createFixture(new pl.Box(0.45, 0.42, V(0.95, 0.5)), { density: 1.4, friction: 0.6 })
+  c.setUserData({ part: 'chassis' })
+  truck.chassis = c; truck.wheels = []; truck.joints = []
+  for (const wx of [-0.98, 0.98]) {
+    const w = world.createBody({ type: 'dynamic', position: V(x + wx, y - 0.36), angularDamping: 0.1 })
+    w.createFixture(new pl.Circle(TRUCK.wheelR), { density: 1.6, friction: 1.4, restitution: 0.05 })
+    w.setUserData({ part: 'wheel' })
+    const j = world.createJoint(new pl.WheelJoint({ motorSpeed: 0, maxMotorTorque: TRUCK.torque, enableMotor: true, frequencyHz: TRUCK.hz, dampingRatio: TRUCK.damp }, c, w, w.getPosition(), V(0, 1)))
+    truck.wheels.push(w); truck.joints.push(j)
+  }
+  if (!truck.group) { const m = truckMesh(); truck.group = m.g; truck.wheelMeshes = m.wheels }
+}
+const touching = (b) => { for (let ce = b.getContactList(); ce; ce = ce.next) if (ce.contact.isTouching()) return true; return false }
+function syncTruck() {
+  const p = truck.chassis.getPosition()
+  truck.group.position.set(p.x, p.y, 0); truck.group.rotation.z = truck.chassis.getAngle()
+  truck.wheels.forEach((w, i) => { const q = w.getPosition(); truck.wheelMeshes[i].position.set(q.x, q.y, 0); truck.wheelMeshes[i].rotation.z = w.getAngle() })
+}
+
+// ---------------------------------------------------------------- cargo
+// run.items: [{ id, alive }]; live: the item bodies of this road.
+let live = []
+const debris = []
+function spawnItem(entry, lx, ly) {
+  const kind = KINDS[entry.id]
+  const wp = truck.chassis.getWorldPoint(V(lx, ly))
+  const made = kind.make(world, wp.x, wp.y)
+  const item = { entry, kind, body: made.body, group: made.group, tiers: made.tiers, out: 0, cool: 0, hopT: rnd(1.5, 3), alive: true }
+  made.body.setUserData({ item })
+  if (item.tiers) while (item.tiers.length > run.cakeTiers) { const top = item.tiers.pop(); made.body.destroyFixture(top.fixture); made.group.remove(top.group) }
+  scene.add(made.group)
+  live.push(item)
+  return item
+}
+// Cake in the middle of the bed, the rest left and right, stacked when there are more than two.
+function loadCargo(drop = 0) {
+  const entries = run.items.filter((e) => e.alive)
+  const cake = entries.find((e) => e.id === CAKE), rest = entries.filter((e) => e.id !== CAKE)
+  if (cake) spawnItem(cake, -0.4, BED.floor + 0.01 + drop)
+  const xs = [-1.02, 0.26], stack = [BED.floor + 0.01, BED.floor + 0.01]
+  rest.forEach((e, i) => {
+    const side = i % 2
+    spawnItem(e, xs[side], stack[side] + drop)
+    stack[side] += KINDS[e.id].h + 0.03
+  })
+}
+function cargoBodies() { return live.filter((i) => i.alive) }
+function removeItem(item, keep = 2.5) {
+  item.alive = false
+  debris.push({ body: item.body, mesh: item.group, t: keep })
+}
+
+// ---------------------------------------------------------------- effects
+const parts = []
+const partGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09)
+function burst(x, y, colors, n = 18, speed = 5, up = 3) {
+  for (let i = 0; i < n; i++) {
+    if (parts.length > 260) break
+    const m = new THREE.Mesh(partGeo, mat(pick(colors))); m.position.set(x, y, rnd(-0.3, 0.3)); scene.add(m)
+    const a = rnd(0, Math.PI * 2), s = rnd(0.3, 1) * speed
+    parts.push({ m, vx: Math.cos(a) * s, vy: Math.sin(a) * s + up, vz: rnd(-2, 2), life: rnd(0.7, 1.4), spin: rnd(-12, 12) })
+  }
+}
+function updateParts(dt) {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]; p.life -= dt
+    p.vy -= 12 * dt; p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt; p.m.rotation.x += p.spin * dt; p.m.rotation.y += p.spin * dt
+    if (p.life <= 0) { scene.remove(p.m); parts.splice(i, 1) }
+  }
+}
+let shakeT = 0
+const shake = (s) => { shakeT = Math.max(shakeT, s) }
+function banner(text, good = false) {
+  const b = $('banner'); b.textContent = text; b.classList.toggle('good', good)
+  b.classList.remove('on'); void b.offsetWidth; b.classList.add('on')
+}
+function pop(text, id, x, y) {
+  const v = new THREE.Vector3(x, y, 0).project(camera)
+  const el = document.createElement('div'); el.className = 'pop'
+  el.style.left = clamp((v.x * 0.5 + 0.5) * 100, 12, 88) + '%'; el.style.top = clamp((-v.y * 0.5 + 0.5) * 100, 18, 70) + '%'
+  el.innerHTML = (id ? `<img src="${thumbs[id] || ''}" alt="">` : '') + `<span>${text}</span>`
+  $('pops').appendChild(el); setTimeout(() => el.remove(), 1300)
+}
+
+// ---------------------------------------------------------------- run
+const game = { state: 'load', time: 0 }
+const run = { course: 0, time: 0, items: [], cakeTiers: 3, continued: false, phase: 'idle', phaseT: 0, flipT: 0, stuckT: 0, reason: '', story: null, lastCourse: 0 }
+const input = { gas: false, back: false, keys: new Set(), pressed: false }
+
+function pickItems() {
+  const pool = [...PICKABLE].sort(() => Math.random() - 0.5)
+  return [{ id: CAKE, alive: true }, ...pool.slice(0, 4).map((id) => ({ id, alive: true }))]
+}
+function clearCourse() {
+  for (const i of live) scene.remove(i.group)
+  for (const d of debris) scene.remove(d.mesh)
+  live = []; debris.length = 0
+  if (course) { scene.remove(course.group); disposeGroup(course.group) }
+  course = null
+}
+function loadCourse(index, { story = false } = {}) {
+  clearCourse()
+  newWorld()
+  run.course = index
+  course = buildCourse(world, index)
+  scene.add(course.group)
+  scene.background?.dispose?.(); scene.background = skyTexture(course.theme)
+  makeTruck(course.startX, course.startY + 0.85)
+  syncTruck()
+  if (!story) loadCargo()
+  run.flipT = 0; run.stuckT = 0
+  snapCamera()
+}
+function startRun() {
+  const first = Q.has('c') ? clamp(+Q.get('c'), 0, COURSES.length - 1) : 0
+  audio.unlock()
+  hide('title'); hide('result'); hide('panel'); hide('pause'); show('hud')
+  Object.assign(run, { course: 0, time: 0, items: pickItems(), cakeTiers: 3, continued: false, reason: '', lastCourse: 0 })
+  game.state = 'play'
+  audio.music('drive')
+  platform.message('gameplay_started')
+  const tell = first === 0 && (!save.seenStory || Q.has('story'))
+  loadCourse(first, { story: tell })
+  if (tell) {
+    run.phase = 'story'
+    playStory([
+      { who: 'chef', key: 's1a', cam: 'bakery' },
+      { who: 'chef', key: 's1b', cam: 'bakery', act: () => { spawnItem(run.items[0], -0.4, BED.floor + 1.2); audio.play('soft', 0.8) } },
+      { who: 'chef', key: 's1c', cam: 'truck', act: () => dropRest() },
+      { who: 'driver', key: 's1d', cam: 'truck' },
+    ], () => { save.seenStory = 1; writeSave(); beginDrive() })
+  } else beginDrive()
+  sync()
+}
+function dropRest() {
+  const rest = run.items.filter((e) => e.id !== CAKE)
+  const xs = [-1.02, 0.26, -1.02, 0.26]
+  rest.forEach((e, i) => setTimeout(() => { if (run.phase === 'story' && course?.index === 0) { spawnItem(e, xs[i], BED.floor + 1.4 + (i > 1 ? 0.7 : 0)); audio.play('thud', 0.7, 0.9 + i * 0.1); shake(0.15) } }, i * 260))
+}
+function beginDrive() {
+  run.phase = 'ready'; run.phaseT = 0
+  // A skipped scene can leave part of the cargo unloaded: load it again in one go.
+  if (live.filter((i) => i.alive).length < run.items.filter((e) => e.alive).length) { for (const i of live) { scene.remove(i.group); world.destroyBody(i.body) } live = []; loadCargo() }
+  hide('story')
+  $('holdTip').textContent = run.course === 0 && !save.runs ? t('hold') : ''
+}
+function restartCourse() {
+  loadCourse(run.course)
+  run.phase = 'ready'; run.phaseT = 0
+}
+function nextCourse() {
+  const n = run.course + 1
+  run.lastCourse = n
+  save.bestCourse = Math.max(save.bestCourse, n); writeSave()
+  if (n === 5 && (!save.seenMid || Q.has('story'))) {
+    loadCourse(5)
+    run.phase = 'story'
+    playStory([
+      { who: 'radio', key: 's2a', cam: 'bridge', act: collapseBridge },
+      { who: 'driver', key: 's2b', cam: 'truck' },
+    ], () => { save.seenMid = 1; writeSave(); beginDrive() })
+    return
+  }
+  loadCourse(n)
+  run.phase = 'ready'; run.phaseT = 0
+}
+let bridgeFall = 0
+function collapseBridge() { bridgeFall = 0.001; audio.play('boom', 0.7, 0.7); audio.play('wood', 0.8); shake(0.5) }
+
+function courseClear() {
+  run.phase = 'clear'; run.phaseT = 0
+  audio.play('finish', 0.9); buzz(40)
+  const p = truck.chassis.getPosition()
+  burst(course.finishX, p.y + 2.5, [0xff4f6d, 0xffd23f, 0x4fc3ff, 0x2ee6a6, 0xffffff], 40, 6, 4)
+  if (run.course === COURSES.length - 1) { run.phase = 'arrive'; banner(t('clearAll'), true); return }
+  banner(t('clear'), true)
+}
+function oops(lostTier) {
+  if (run.phase !== 'drive') return
+  run.phase = 'oops'; run.phaseT = 0
+  audio.play('deny', 0.8); buzz(80); shake(0.3)
+  banner(t('oops'))
+  if (lostTier) loseTier(live.find((i) => i.tiers), true)
+}
+function loseTier(cake, quiet) {
+  if (!cake || !cake.tiers?.length) return
+  const top = cake.tiers.pop()
+  run.cakeTiers = cake.tiers.length
+  const wp = cake.body.getWorldPoint(V(0, 0.1 + cake.tiers.length * 0.2))
+  cake.body.destroyFixture(top.fixture)
+  cake.group.remove(top.group)
+  // The tier flies off as a piece of debris.
+  const d = world.createBody({ type: 'dynamic', position: wp, angle: cake.body.getAngle() })
+  d.createFixture(new pl.Box(top.r, 0.1), { density: 0.6, friction: 0.6 })
+  const v = cake.body.getLinearVelocity(); d.setLinearVelocity(V(v.x * 0.5 - 1.5, v.y + 4)); d.setAngularVelocity(rnd(-6, 6))
+  top.group.position.set(0, -0.1, 0); const holder = new THREE.Group(); holder.add(top.group); scene.add(holder)
+  debris.push({ body: d, mesh: holder, t: 3 })
+  burst(wp.x, wp.y, [0xffffff, 0xff8fb1, 0xfff6ea], 22, 4, 3)
+  audio.play('smash', 0.7, 1.2); audio.play('soft', 1)
+  if (!quiet) { banner(t('tier')); buzz(60) }
+  pop(t('tier'), CAKE, wp.x, wp.y)
+  cake.cool = 0.45
+  sync()
+  if (!cake.tiers.length) { cake.entry.alive = false; removeItem(cake, 1); fail('cake') }
+}
+function smash(item, word = 'broke') {
+  const p = item.body.getPosition()
+  item.entry.alive = false
+  scene.remove(item.group); world.destroyBody(item.body); item.alive = false
+  burst(p.x, p.y, itemColors(item), 26, 5, 2)
+  audio.play('smash', 0.9); buzz(50)
+  pop(t(word), item.entry.id, p.x, p.y + 0.4)
+  sync()
+}
+function explode(item) {
+  const p = item.body.getPosition().clone()
+  smash(item, 'boom')
+  audio.play('boom', 1); shake(0.7); banner(t('boom'))
+  burst(p.x, p.y, [0xff4f6d, 0xffd23f, 0xff9f1c, 0xffffff], 50, 9, 3)
+  for (const other of [...cargoBodies(), { body: truck.chassis }]) {
+    const q = other.body.getPosition(), dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy)
+    if (d > 2.6 || d < 0.01) continue
+    const k = (1 - d / 2.6) * other.body.getMass() * 7
+    other.body.applyLinearImpulse(V((dx / d) * k, (dy / d) * k + k * 0.4), q, true)
+  }
+}
+function itemColors(item) {
+  const c = []
+  item.group.traverse((o) => { if (o.material?.color && c.length < 4) c.push(o.material.color.getHex()) })
+  return c.length ? c : [0xffffff]
+}
+function lose(item) {
+  if (item.tiers) { oops(true); return }
+  item.entry.alive = false
+  const p = item.body.getPosition()
+  removeItem(item)
+  audio.play('soft', 0.8, 0.8); buzz(40)
+  pop(t('lost'), item.entry.id, p.x, p.y + 0.5)
+  sync()
+}
+function fail(reason) {
+  if (run.phase === 'fail' || run.phase === 'done') return
+  run.phase = 'fail'; run.phaseT = 0; run.reason = reason
+  audio.play('lose', 0.9); audio.engine(0, 50)
+  banner(reason === 'time' ? t('timeUp') : t('cakeGone'))
+  setTimeout(() => {
+    if (run.phase !== 'fail') return
+    playStory([{ who: reason === 'time' ? 'bride' : 'chef', key: reason === 'time' ? 'f2' : 'f1', cam: 'truck' }], () => showResult(false))
+  }, 1100)
+}
+
+// ---------------------------------------------------------------- story
+function playStory(lines, done) {
+  let i = -1, timer = 0
+  const next = () => {
+    i++
+    if (i >= lines.length) { hide('story'); $('hud').classList.remove('story'); run.story = null; done(); return }
+    const l = lines[i]
+    $('who').textContent = t(l.who); $('line').textContent = t(l.key)
+    const bubble = document.querySelector('.bubble'); bubble.style.animation = 'none'; void bubble.offsetWidth; bubble.style.animation = ''
+    run.storyCam = l.cam
+    l.act?.()
+    audio.play('click', 0.4, 1.3)
+    timer = BOT ? 0.9 : 3.2
+  }
+  run.story = { tick(dt) { timer -= dt; if (timer <= 0) next() }, next, skip() { i = lines.length - 1; next() } }
+  $('skipBtn').textContent = t('skip')
+  show('story'); $('hud').classList.add('story'); next()
+}
+
+// ---------------------------------------------------------------- result
+function showResult(won) {
+  run.phase = 'done'; game.state = 'result'
+  audio.engine(0, 50); audio.music('lobby')
+  platform.message('gameplay_stopped')
+  save.runs++
+  let fresh = false
+  // A run started from a later road (?c= test link) never counts as a record.
+  if (won && !Q.has('c')) { save.clears++; if (!save.bestTime || run.time < save.bestTime) { save.bestTime = run.time; fresh = true } }
+  save.bestCourse = Math.max(save.bestCourse, won ? COURSES.length : run.course)
+  writeSave()
+  hide('hud'); hide('story'); show('result')
+  $('resTitle').textContent = won ? t('clearAll') : run.reason === 'time' ? t('timeUp') : t('cakeGone')
+  $('resCake').innerHTML = `<img src="${cakeThumb(won ? run.cakeTiers : 0)}" alt="">`
+  $('resItems').innerHTML = run.items.filter((e) => e.id !== CAKE).map((e) => `<span class="${e.alive ? '' : 'gone'}"><img src="${thumbs[e.id]}" alt=""></span>`).join('')
+  $('resTimeL').textContent = won ? t('time') : t('course'); $('resTime').textContent = won ? fmt(run.time) : `${run.course + 1} / ${COURSES.length}`
+  $('resBestL').textContent = save.bestTime ? t('best') : t('farthest'); $('resBest').textContent = save.bestTime ? fmt(save.bestTime) : `${save.bestCourse} / ${COURSES.length}`
+  $('resNew').textContent = t('newBest'); $('resNew').classList.toggle('hide', !fresh)
+  const canCont = !won && !run.continued
+  $('contBtn').classList.toggle('hide', !canCont)
+  $('contBtn').textContent = run.reason === 'time' ? t('cont2') : t('cont1')
+  $('againBtn').textContent = t('again'); $('homeBtn').textContent = t('home')
+  if (won) { audio.play('win', 0.9); burst(truck.chassis.getPosition().x + 6, truck.chassis.getPosition().y + 3, [0xff4f6d, 0xffd23f, 0x4fc3ff, 0xffffff, 0xff8fb1], 80, 8, 5) }
+  if (save.runs >= 2) platform.interstitial()
+}
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}.${Math.floor((s % 1) * 10)}`
+function goHome() {
+  game.state = 'title'
+  hide('result'); hide('hud'); hide('pause'); hide('panel'); hide('story')
+  run.phase = 'idle'; run.items = pickItems(); run.cakeTiers = 3
+  loadCourse(0)
+  show('title'); audio.music('lobby'); audio.engine(0, 50)
+  sync()
+}
+
+// ---------------------------------------------------------------- update
+const STEP = 1 / 60
+let acc = 0
+function updatePlay(dt) {
+  const ph = run.phase
+  run.phaseT += dt
+  if (run.story) run.story.tick(dt)
+  if (['ready', 'drive', 'oops'].includes(ph)) run.time += dt
+  if (ph === 'ready' && run.phaseT > 0.9) { run.phase = 'drive'; run.phaseT = 0; banner(t('go'), true); audio.play('coin', 0.6, 1.2) }
+  if (ph === 'oops' && run.phaseT > 1.0) restartCourse()
+  if (ph === 'clear' && run.phaseT > 1.6) nextCourse()
+  if (ph === 'arrive' && run.phaseT > 1.4) {
+    run.phase = 'end'
+    const tiers = run.cakeTiers
+    playStory([{ who: 'bride', key: tiers >= 3 ? 's3a' : tiers === 2 ? 's3b' : 's3c', cam: 'couple', act: () => { audio.play('win', 0.8); burst(course.couple.x, course.groundY(course.couple.x) + 3, [0xff4f6d, 0xffd23f, 0x4fc3ff, 0xffffff, 0xff8fb1], 70, 7, 5) } }], () => showResult(true))
+  }
+  if (ph === 'drive' && LIMIT - run.time <= 0) fail('time')
+
+  drive(dt)
+  acc += dt
+  let steps = 0
+  while (acc >= STEP && steps < 4) { world.step(STEP, 8, 3); acc -= STEP; steps++; handleEvents() }
+  if (steps === 4) acc = 0
+  for (const o of course.objs) o.update(dt, objCtx)
+  updateCargo(dt)
+  updateDebris(dt)
+  syncTruck()
+  if (run.phase === 'drive') watchTruck(dt)
+  if (bridgeFall > 0 && course.bridgeParts) { bridgeFall += dt; course.bridgeParts.forEach((p, i) => { if (i > 1 && i < 6) { const k = Math.max(0, bridgeFall - (i - 2) * 0.15); p.position.y = 3 - k * k * 6; p.rotation.z = k * (i % 2 ? 1.5 : -1.2) } }); if (bridgeFall > 3) bridgeFall = 0 }
+}
+const objCtx = { truckX: () => truck.chassis.getPosition().x, cargo: () => cargoBodies(), sound: (n, v, r) => audio.play(n, v, r), shake }
+function drive(dt) {
+  if (BOT) botInput()
+  const can = run.phase === 'drive' || run.phase === 'clear'
+  const gas = can && (input.gas || input.keys.has('ArrowRight') || input.keys.has('KeyD') || input.keys.has('KeyW') || input.keys.has('ArrowUp'))
+  const back = can && (input.back || input.keys.has('ArrowLeft') || input.keys.has('KeyA') || input.keys.has('KeyS') || input.keys.has('ArrowDown'))
+  const arriving = run.phase === 'arrive' || run.phase === 'end' || run.phase === 'done'
+  const dir = arriving ? 0 : gas && !back ? 1 : back && !gas ? -1 : 0
+  for (const j of truck.joints) {
+    if (arriving) { j.setMotorSpeed(0); j.setMaxMotorTorque(5) }
+    else if (dir) { j.setMotorSpeed(-dir * TRUCK.speed); j.setMaxMotorTorque(TRUCK.torque) }
+    else { j.setMotorSpeed(0); j.setMaxMotorTorque(1.2) }
+  }
+  const air = !truck.wheels.some(touching)
+  if (dir && air) truck.chassis.applyTorque(dir * TRUCK.air, true)
+  $('gasBtn').classList.toggle('on', gas); $('backBtn').classList.toggle('on', back)
+  if (gas && $('holdTip').textContent) $('holdTip').textContent = ''
+  const spin = Math.abs(truck.wheels[0].getAngularVelocity())
+  audio.engine(game.state === 'play' && !arriving ? 0.45 + (dir ? 0.55 : 0) : 0, 46 + spin * 3.2)
+}
+function handleEvents() {
+  for (const e of events) {
+    if (e.kind === 'hit') {
+      const item = e.item
+      if (!item.alive || item.cool > 0 || run.phase !== 'drive') continue
+      if (BOT) hits.push([run.course, item.entry.id, Math.round(e.dv * 10) / 10])
+      if (e.dv > 2.6) audio.play('soft', clamp(e.dv / 8, 0.2, 0.8), rnd(0.9, 1.2))
+      if (item.kind.special === 'startle' && e.dv > 2.4) { item.body.applyLinearImpulse(V(rnd(-0.6, 0.6) * item.body.getMass(), 3 * item.body.getMass()), item.body.getPosition(), true); item.cool = 0.6; continue }
+      const bv = item.kind.breakV
+      if (!bv || e.dv < bv) continue
+      if (item.tiers) loseTier(item)
+      else if (item.kind.special === 'explode') explode(item)
+      else smash(item)
+    } else if (e.kind === 'land') {
+      audio.play('land', clamp(e.dv / 9, 0.25, 0.9), rnd(0.9, 1.1)); if (e.dv > 5) { shake(0.2); buzz(25) }
+    } else if (e.kind === 'tramp') {
+      for (const b of [truck.chassis, ...truck.wheels, ...cargoBodies().map((i) => i.body)]) { const v = b.getLinearVelocity(); if (v.y < 9) b.setLinearVelocity(V(v.x, 11.5)) }
+      audio.play('boom', 0.5, 1.6); shake(0.2)
+    }
+  }
+  events.length = 0
+}
+let gameClock = 0
+function updateCargo(dt) {
+  gameClock += dt
+  for (const item of live) {
+    if (!item.alive) continue
+    item.cool -= dt
+    const p = item.body.getPosition()
+    item.group.position.set(p.x, p.y, 0); item.group.rotation.z = item.body.getAngle()
+    if (item.group.userData.wobble) { const s = 1 + Math.sin(gameClock * 11) * 0.06; item.group.userData.wobble.scale.set(1 / s, s, 1 / s) }
+    if (run.phase === 'drive' && item.kind.special === 'hop') {
+      item.hopT -= dt
+      if (item.hopT <= 0) { item.hopT = rnd(1.8, 3.6); const m = item.body.getMass(); item.body.applyLinearImpulse(V(rnd(-0.5, 0.5) * m, 2.4 * m), p, true); audio.play('click', 0.3, 1.8) }
+    }
+    if (run.phase !== 'drive') { item.out = 0; continue }
+    const lp = truck.chassis.getLocalPoint(p)
+    const inBed = lp.x > -1.75 && lp.x < 0.8 && lp.y > -0.4 && lp.y < 3.4
+    item.out = inBed ? 0 : item.out + dt
+    if (item.out > 0.8 || p.y < course.killY) lose(item)
+  }
+}
+function updateDebris(dt) {
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i]; d.t -= dt
+    const p = d.body.getPosition(); d.mesh.position.set(p.x, p.y, 0); d.mesh.rotation.z = d.body.getAngle()
+    if (d.t <= 0) { scene.remove(d.mesh); world.destroyBody(d.body); debris.splice(i, 1) }
+  }
+}
+function watchTruck(dt) {
+  const c = truck.chassis, p = c.getPosition(), a = wrapAngle(c.getAngle())
+  if (p.x > course.finishX) { courseClear(); return }
+  run.flipT = Math.abs(a) > 1.9 ? run.flipT + dt : 0
+  const v = c.getLinearVelocity()
+  run.stuckT = Math.hypot(v.x, v.y) < 0.25 && (input.gas || input.back) ? run.stuckT + dt : 0
+  if (run.flipT > 1.2 || p.y < course.killY || run.stuckT > 5) oops(false)
+}
+function botInput() {
+  input.gas = false; input.back = false
+  if (run.phase !== 'drive') return
+  const c = truck.chassis, a = wrapAngle(c.getAngle()), x = c.getPosition().x, v = c.getLinearVelocity()
+  const air = !truck.wheels.some(touching)
+  if (air) { if (a > 0.3) input.back = true; else if (a < -0.3) input.gas = true; return }
+  input.gas = a < 0.55 && v.x < 7.5
+  for (const o of course.objs) {
+    const w = o.botWait?.(x) || 0
+    if (w === 1) { input.gas = v.x < 2.6; input.back = v.x > 3.4 }
+    if (w === 2) { input.gas = false; input.back = v.x > 0.3 }
+  }
+}
+
+// ---------------------------------------------------------------- camera
+const view = { x: 0, y: 0, d: 30, lx: 0, ly: 0 }
+function cameraGoal() {
+  const aspect = window.innerWidth / Math.max(1, window.innerHeight)
+  const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+  const fit = (w, h) => Math.max(h, w / aspect) / 2 / tanH
+  if (!truck.chassis) return { x: 0, y: 2, d: fit(14, 12), lx: 0, ly: 2 }
+  const p = truck.chassis.getPosition(), v = truck.chassis.getLinearVelocity()
+  const cam = game.state === 'play' && run.story ? run.storyCam : game.state === 'title' ? 'title' : 'drive'
+  if (cam === 'bakery') return { x: -6.5, y: course.startY + 2.2, d: fit(9, 9), lx: -6.5, ly: course.startY + 1.6 }
+  if (cam === 'bridge') return { x: 18, y: course.startY + 1, d: fit(22, 14), lx: 20, ly: course.startY }
+  if (cam === 'couple' && course.couple) { const cy = course.groundY(course.couple.x); return { x: course.couple.x - 1, y: cy + 2.2, d: fit(10, 9), lx: course.couple.x - 1, ly: cy + 1.4 } }
+  if (cam === 'title') return { x: -7.2, y: course.startY + 2.4, d: fit(9.5, 12), lx: -7.2, ly: course.startY + 2.1 }
+  if (cam === 'truck') return { x: p.x - 1, y: p.y + 1.4, d: fit(8.5, 9), lx: p.x - 1, ly: p.y + 0.9 }
+  const ahead = clamp(v.x * 0.3, -1.2, 2.6) + 1.3
+  const speedZoom = clamp(Math.hypot(v.x, v.y) / 9, 0, 1)
+  return { x: p.x + ahead, y: p.y + 2.3, d: fit(8.6 + speedZoom * 2.4, 11 + speedZoom * 2), lx: p.x + ahead, ly: p.y + 1.9 }
+}
+function snapCamera() { Object.assign(view, cameraGoal()); placeCamera(0) }
+function placeCamera(dt) {
+  const g = cameraGoal(), k = dt ? 1 - Math.exp(-dt * 4.5) : 1
+  for (const key of ['x', 'y', 'd', 'lx', 'ly']) view[key] = lerp(view[key], g[key], k)
+  shakeT = Math.max(0, shakeT - dt)
+  const s = save.shake ? shakeT * 0.6 : 0
+  camera.position.set(view.x + rnd(-s, s), view.y + rnd(-s, s) + view.d * 0.06, view.d)
+  camera.lookAt(view.lx, view.ly, 0)
+}
+
+// ---------------------------------------------------------------- hud
+function sync() {
+  $('playBtn').textContent = t('play')
+  $('tagline').textContent = t('tagline')
+  $('bestBox').textContent = save.bestTime ? `${t('best')} ${fmt(save.bestTime)}` : save.bestCourse ? `${t('farthest')} ${save.bestCourse} / ${COURSES.length}` : ''
+  $('pauseTitle').textContent = t('paused'); $('resumeBtn').textContent = t('resume'); $('quitBtn').textContent = t('quit')
+  $('panelClose').textContent = t('close')
+  if (game.state !== 'play') return
+  $('courseText').textContent = `${t('course')} ${run.course + 1} / ${COURSES.length}`
+  $('cargo').innerHTML = run.items.map((e) => e.id === CAKE
+    ? `<span class="${run.cakeTiers ? '' : 'gone'}"><img src="${cakeThumb(run.cakeTiers)}" alt=""><i>${run.cakeTiers}</i></span>`
+    : `<span class="${e.alive ? '' : 'gone'}"><img src="${thumbs[e.id] || ''}" alt=""></span>`).join('')
+}
+let lastClock = ''
+function syncClock() {
+  const left = Math.max(0, LIMIT - run.time)
+  const text = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`
+  if (text !== lastClock) { $('clock').textContent = text; lastClock = text; $('clock').classList.toggle('low', left < 30) }
+}
+
+// ---------------------------------------------------------------- thumbnails
+const thumbs = {}, cakeThumbs = []
+function makeThumbs() {
+  const size = 96
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
+  r.setSize(size, size, false); r.outputColorSpace = THREE.SRGBColorSpace
+  const s = new THREE.Scene(); s.add(new THREE.HemisphereLight(0xffffff, 0x8a7a99, 1.8)); const l = new THREE.DirectionalLight(0xffffff, 1.4); l.position.set(-2, 4, 5); s.add(l)
+  const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50)
+  const tw = new pl.World()
+  const shoot = (group) => {
+    s.add(group)
+    group.rotation.set(0.25, -0.5, 0)
+    const bb = new THREE.Box3().setFromObject(group), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3())
+    const d = Math.max(sz.x, sz.y, sz.z) * 2.3 + 0.2
+    cam.position.set(c.x, c.y + d * 0.1, c.z + d); cam.lookAt(c)
+    r.render(s, cam)
+    s.remove(group)
+    return r.domElement.toDataURL()
+  }
+  for (const [id, k] of Object.entries(KINDS)) if (id !== CAKE) thumbs[id] = shoot(k.make(tw, 0, 0).group)
+  for (let n = 0; n <= 3; n++) {
+    const made = KINDS.cake.make(tw, 0, 0)
+    while (made.tiers.length > Math.max(1, n)) made.group.remove(made.tiers.pop().group)
+    if (n === 0) made.group.traverse((o) => { if (o.material) o.material = mat(0x9a8a7a) })
+    cakeThumbs[n] = shoot(made.group)
+  }
+  thumbs[CAKE] = cakeThumbs[3]
+  r.dispose()
+}
+const cakeThumb = (n) => cakeThumbs[clamp(n, 0, 3)]
+
+// ---------------------------------------------------------------- menus
+function pauseGame() {
+  if (game.state !== 'play') return
+  game.state = 'pause'; show('pause'); audio.engine(0, 50)
+  platform.message('gameplay_stopped')
+}
+function resumeGame() {
+  if (game.state !== 'pause') return
+  game.state = 'play'; hide('pause'); last = performance.now()
+  platform.message('gameplay_started')
+}
+function openSettings() {
+  hide('title'); show('panel')
+  $('panelTitle').textContent = t('settings')
+  const host = $('panelBody'); host.innerHTML = ''
+  const row = (label, el) => { const d = document.createElement('label'); d.className = 'opt'; d.textContent = label; d.appendChild(el); host.appendChild(d) }
+  const slider = (keyName) => { const s = document.createElement('input'); s.type = 'range'; s.min = 0; s.max = 1; s.step = 0.05; s.value = save[keyName]; s.oninput = () => { save[keyName] = +s.value; applyVolume(); writeSave() }; return s }
+  row(t('music'), slider('music')); row(t('sfx'), slider('sfx'))
+  const toggle = document.createElement('button'); toggle.className = 'sub'; toggle.textContent = save.shake ? t('on') : t('off')
+  toggle.onclick = () => { save.shake = save.shake ? 0 : 1; writeSave(); toggle.textContent = save.shake ? t('on') : t('off') }
+  row(t('shake'), toggle)
+  const langBtn = document.createElement('button'); langBtn.className = 'sub'; langBtn.textContent = LANGUAGES[lang]
+  langBtn.onclick = () => { lang = LANG_KEYS[(LANG_KEYS.indexOf(lang) + 1) % LANG_KEYS.length]; save.lang = lang; writeSave(); sync(); openSettings() }
+  row(t('language'), langBtn)
+  if (document.fullscreenEnabled) {
+    const fs = document.createElement('button'); fs.className = 'sub'; fs.textContent = document.fullscreenElement ? t('on') : t('off')
+    fs.onclick = async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen() } catch {} ; fs.textContent = document.fullscreenElement ? t('on') : t('off') }
+    row(t('fullscreen'), fs)
+  }
+  sync()
+}
+
+// ---------------------------------------------------------------- input
+const tap = (id, fn) => $(id).addEventListener('click', () => { audio.unlock(); audio.play('click', 0.5); fn() })
+tap('playBtn', startRun)
+tap('setBtn', openSettings)
+tap('panelClose', () => { hide('panel'); if (game.state === 'title') show('title') })
+tap('againBtn', startRun)
+tap('homeBtn', goHome)
+tap('pauseBtn', pauseGame)
+tap('resumeBtn', resumeGame)
+tap('quitBtn', () => { hide('pause'); game.state = 'play'; fail('cake') })
+tap('skipBtn', () => run.story?.skip())
+$('story').addEventListener('click', (e) => { if (e.target.id !== 'skipBtn') run.story?.next() })
+tap('contBtn', () => platform.rewardedAd((ok) => {
+  if (!ok) return
+  run.continued = true
+  if (run.reason === 'time') run.time = Math.max(0, run.time - 60)
+  else { run.cakeTiers = 1; const cake = run.items.find((e) => e.id === CAKE); cake.alive = true }
+  run.reason = ''
+  game.state = 'play'; hide('result'); show('hud'); audio.music('drive'); platform.message('gameplay_started')
+  restartCourse(); sync()
+}))
+for (const [id, keyName] of [['gasBtn', 'gas'], ['backBtn', 'back']]) {
+  const el = $(id)
+  const on = (e) => { e.preventDefault(); audio.unlock(); input[keyName] = true; el.setPointerCapture?.(e.pointerId) }
+  const off = () => { input[keyName] = false }
+  el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off)
+}
+window.addEventListener('keydown', (e) => {
+  input.keys.add(e.code)
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (game.state === 'play') pauseGame(); else if (game.state === 'pause') resumeGame() }
+  if ((e.code === 'Space' || e.code === 'Enter') && run.story) { e.preventDefault(); run.story.next() }
+})
+window.addEventListener('keyup', (e) => input.keys.delete(e.code))
+window.addEventListener('blur', () => { input.keys.clear(); input.gas = input.back = false })
+window.addEventListener('pointerdown', () => audio.unlock())
+
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight
+  renderer.setSize(w, h, false)
+  camera.aspect = w / h; camera.updateProjectionMatrix()
+}
+window.addEventListener('resize', resize)
+
+// ---------------------------------------------------------------- loop
+let last = performance.now()
+function frame(now) {
+  requestAnimationFrame(frame)
+  const dt = Math.min(0.05, (now - last) / 1000); last = now
+  if (game.state === 'play') { updatePlay(dt); syncClock() }
+  else if (game.state === 'title' || game.state === 'result') {
+    acc += dt
+    while (acc >= STEP) { world.step(STEP, 8, 3); acc -= STEP; events.length = 0 }
+    for (const o of course.objs) o.update(dt, objCtx)
+    updateCargo(dt); updateDebris(dt); syncTruck(); drive(dt)
+  }
+  updateParts(dt)
+  if (course?.chef) course.chef.rotation.z = Math.sin(now / 300) * 0.06
+  if (course?.couple) { course.couple.bride.position.y = Math.abs(Math.sin(now / 260)) * 0.15; course.couple.groom.position.y = Math.abs(Math.sin(now / 260 + 1)) * 0.15 }
+  placeCamera(dt)
+  renderer.render(scene, camera)
+}
+
+async function boot() {
+  const bar = $('loadbar'); bar.style.width = '30%'
+  await platform.init()
+  bar.style.width = '60%'
+  await readSave()
+  const want = Q.get('lang') || save.lang || (platform.ready ? window.bridge.platform.language : navigator.language) || 'en'
+  lang = LANG_KEYS.includes(Q.get('lang')) ? Q.get('lang') : LANG_KEYS.includes(save.lang) ? save.lang : (LANG_KEYS.find((k) => String(want).toLowerCase().startsWith(k)) || 'en')
+  makeThumbs()
+  resize()
+  run.items = pickItems()
+  loadCourse(0)
+  game.state = 'title'
+  sync()
+  bar.style.width = '100%'
+  requestAnimationFrame((n) => { last = n; frame(n) })
+  requestAnimationFrame(() => {
+    hide('loading'); platform.message('game_ready')
+    if (BOT) startRun()
+    else { show('title'); audio.music('lobby') }
+  })
+}
+boot()
+if (BOT || Q.has('debug')) window.__bd = { hits, thumbs, game, run, save, truck, get course() { return course }, get live() { return live }, startRun, loadCourse }
