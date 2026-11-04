@@ -81,6 +81,7 @@ const platform = {
     try { if (this.ready) window.bridge.advertisement.showInterstitial() } catch {}
   },
   rewardedAd(done) {
+    if (!this.ready && BOT && Q.has('adok')) { done(true); return } // test: pretend the ad was watched
     if (!this.ready) { done(false); return }
     this.rewardDone = done; this.rewarded = false; this.lastAd = Date.now()
     try { window.bridge.advertisement.showRewarded() } catch { this.rewardDone = null; done(false) }
@@ -404,6 +405,15 @@ function respawnX() {
   while (x > course.startX && blocked(x)) x -= 0.5
   return Math.max(course.startX, x)
 }
+// After a watched ad the run goes on past the spot that ended it: over the gap it fell into,
+// or just ahead of where the cake broke, so the ad buys real progress.
+function continueX() {
+  const blocked = (x) => course.groundY(x) === null || course.groundY(x - 1.5) === null || course.groundY(x + 1.5) === null || course.objs.some((o) => o.span && x > o.span[0] - 2 && x < o.span[1] + 2)
+  const end = course.finishX - 3
+  let x = Math.max(course.startX, run.failX + 2)
+  while (x < end && blocked(x)) x += 0.5
+  return x < end ? x : end
+}
 function restartCourse(fromStart = false) {
   loadCourse(run.course, { at: fromStart ? null : respawnX() })
   run.phase = 'ready'; run.phaseT = 0
@@ -539,6 +549,7 @@ function lose(item) {
 function fail(reason) {
   if (run.phase === 'fail' || run.phase === 'done') return
   run.phase = 'fail'; run.phaseT = 0; run.reason = reason
+  run.failX = truck.chassis ? truck.chassis.getPosition().x : course.startX
   audio.play('lose', 0.9); audio.engine(0, 50)
   banner(reason === 'time' ? t('timeUp') : reason === 'fell' ? t('fell') : t('cakeGone'))
   if (game.state === 'sim') return
@@ -913,7 +924,9 @@ tap('contBtn', () => platform.rewardedAd((ok) => {
   else { run.cakeTiers = 1; const cake = run.items.find((e) => e.id === CAKE); cake.alive = true }
   run.reason = ''
   game.state = 'play'; hide('result'); show('hud'); audio.music('drive'); platform.message('gameplay_started')
-  restartCourse(); sync()
+  loadCourse(run.course, { at: continueX() })
+  run.phase = 'ready'; run.phaseT = 0; run.safeX = truck.chassis.getPosition().x
+  sync()
 }))
 for (const [id, keyName] of [['gasBtn', 'gas'], ['backBtn', 'back']]) {
   const el = $(id)
