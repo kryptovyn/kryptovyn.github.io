@@ -176,7 +176,7 @@ function newWorld() {
     const ma = mass(A), mb = mass(B)
     for (const [u, o, m, mo] of [[ua, ub, ma, mb], [ub, ua, mb, ma]]) {
       const felt = (dv * mo) / (m + mo)
-      if (u?.item && felt > 1.6) events.push({ kind: 'hit', item: u.item, dv: felt })
+      if (u?.item && felt > 1.6) events.push({ kind: 'hit', item: u.item, dv: felt, by: o?.item ? o.item.entry.id : o?.part || (o?.prop ? 'prop' : 'ground') })
       else if (u?.part === 'chassis' && !o?.item) events.push({ kind: 'land', dv: felt })
     }
   })
@@ -443,6 +443,7 @@ function loseTier(cake, quiet) {
   if (!cake || !cake.tiers?.length) return
   const top = cake.tiers.pop()
   run.cakeTiers = cake.tiers.length
+  if (game.state === 'sim') (sim.lost ||= []).push(Math.round(truck.chassis.getPosition().x) + (sim.why ? ':' + sim.why : ''))
   const wp = cake.body.getWorldPoint(V(0, 0.1 + cake.tiers.length * 0.2))
   cake.body.destroyFixture(top.fixture)
   cake.group.remove(top.group)
@@ -500,6 +501,7 @@ function fail(reason) {
   run.phase = 'fail'; run.phaseT = 0; run.reason = reason
   audio.play('lose', 0.9); audio.engine(0, 50)
   banner(reason === 'time' ? t('timeUp') : reason === 'fell' ? t('fell') : t('cakeGone'))
+  if (game.state === 'sim') return
   setTimeout(() => {
     if (run.phase !== 'fail') return
     playStory([{ who: reason === 'time' ? 'bride' : 'chef', key: reason === 'time' ? 'f2' : 'f1', cam: 'truck' }], () => showResult(false))
@@ -592,7 +594,9 @@ function updatePlay(dt) {
 }
 const objCtx = { truckX: () => truck.chassis.getPosition().x, cargo: () => cargoBodies(), sound: (n, v, r) => audio.play(n, v, r), shake }
 function drive(dt) {
-  if (BOT) botInput()
+  if (sim.policy) simInput(sim.policy)
+  else if (BOT && Q.get('pol')) simInput(POLICIES.find((p) => p.name === Q.get('pol')))
+  else if (BOT) botInput()
   const can = run.phase === 'drive' || run.phase === 'clear'
   const gas = can && (input.gas || input.keys.has('ArrowRight') || input.keys.has('KeyD') || input.keys.has('KeyW') || input.keys.has('ArrowUp'))
   const back = can && (input.back || input.keys.has('ArrowLeft') || input.keys.has('KeyA') || input.keys.has('KeyS') || input.keys.has('ArrowDown'))
@@ -620,13 +624,16 @@ function handleEvents() {
       if (item.kind.special === 'startle' && e.dv > 2.4) { item.body.applyLinearImpulse(V(rnd(-0.6, 0.6) * item.body.getMass(), 3 * item.body.getMass()), item.body.getPosition(), true); item.cool = 0.6; continue }
       const bv = item.kind.breakV
       if (!bv || e.dv < bv) continue
-      if (item.tiers) loseTier(item)
+      if (item.tiers) { sim.why = `${e.by || ''}${e.dv.toFixed(1)}`; loseTier(item); sim.why = '' }
       else if (item.kind.special === 'explode') explode(item)
       else smash(item)
     } else if (e.kind === 'land') {
       audio.play('land', clamp(e.dv / 9, 0.25, 0.9), rnd(0.9, 1.1)); if (e.dv > 5) { shake(0.2); buzz(25) }
     } else if (e.kind === 'tramp') {
-      for (const b of [truck.chassis, ...truck.wheels, ...cargoBodies().map((i) => i.body)]) { const v = b.getLinearVelocity(); if (v.y < 9) b.setLinearVelocity(V(v.x, 11.5)) }
+      // The bounce itself never hurts the cargo; only the landing counts.
+      for (const i of cargoBodies()) i.cool = Math.max(i.cool, 0.35)
+      sim.tramp = (sim.tramp || 0) + 1; { const v = truck.chassis.getLinearVelocity(), q = truck.chassis.getPosition(); sim.tv = `${v.x.toFixed(1)},${v.y.toFixed(1)}@${q.x.toFixed(1)},${q.y.toFixed(1)} t${run.phaseT.toFixed(2)}` }
+      for (const b of [truck.chassis, ...truck.wheels, ...cargoBodies().map((i) => i.body)]) { const v = b.getLinearVelocity(); if (v.y < 4.5) b.setLinearVelocity(V(v.x, 5.6)) }
       audio.play('boom', 0.5, 1.6); shake(0.2)
     }
   }
@@ -880,4 +887,60 @@ async function boot() {
   })
 }
 boot()
-if (BOT || Q.has('debug')) window.__bd = { hits, thumbs, game, run, save, truck, get course() { return course }, get live() { return live }, startRun, loadCourse }
+// ---------------------------------------------------------------- pass test
+// Difficulty is about throttle control: a road should be cleared by careful forward/back driving,
+// and holding forward alone should not be enough on the later roads. simAll() drives every road
+// with several driving styles, without drawing, and reports what each style achieved.
+const sim = { policy: null }
+function simInput(pol) {
+  const c = truck.chassis, a = wrapAngle(c.getAngle()), v = c.getLinearVelocity(), x = c.getPosition().x
+  input.gas = input.back = false
+  if (pol.hold) { input.gas = true; return }
+  const air = !truck.wheels.some(touching)
+  if (air) { if (a > 0.22) input.back = true; else if (a < -0.22) input.gas = true; return }
+  // Smart styles: full speed when a gap is coming up (a jump), slow everywhere else.
+  let want = pol.v
+  if (pol.slow) { want = pol.slow; for (let dx = 2; dx < 16; dx += 0.5) if (course.groundY(x + dx) === null) { want = pol.fast; break } }
+  input.gas = v.x < want && a < 0.6
+  input.back = v.x > want + 1.2
+  for (const o of course.objs) {
+    const w = o.botWait?.(x) || 0
+    if (w === 1) { input.gas = v.x < 2.6; input.back = v.x > 3.4 }
+    if (w === 2) { input.gas = false; input.back = v.x > 0.3 }
+  }
+}
+const POLICIES = [{ name: 'hold', hold: true }, ...[3.5, 5, 6.5, 8, 9.5].map((v) => ({ name: `v${v}`, v })), { name: 'smart4', slow: 4, fast: 9.5 }, { name: 'smart6', slow: 6, fast: 9.5 }]
+function simCourse(index, pol, ids) {
+  run.items = ids.map((id) => ({ id, alive: true })); run.cakeTiers = 3; run.time = 0; run.continued = false
+  game.state = 'sim'; sim.policy = pol
+  loadCourse(index); run.phase = 'drive'; run.phaseT = 0
+  let t = 0, oopsN = 0, out = 'timeout'
+  while (t < 60) {
+    run.phaseT += STEP; run.time += STEP
+    if (run.phase === 'oops' && run.phaseT > 1) { restartCourse(); oopsN++ }
+    if (run.phase === 'ready') run.phase = 'drive'
+    drive(STEP)
+    world.step(STEP, 8, 3); handleEvents()
+    for (const o of course.objs) o.update(STEP, objCtx)
+    updateCargo(STEP); updateDebris(STEP)
+    if (run.phase === 'drive') watchTruck(STEP)
+    if (run.phase === 'clear' || run.phase === 'arrive') { out = 'clear'; break }
+    if (run.phase === 'fail') { out = run.reason; break }
+    t += STEP
+  }
+  sim.policy = null; input.gas = input.back = false
+  run.phase = 'idle'
+  const tp = truck.chassis.getPosition()
+  const tr = sim.tramp || 0; sim.tramp = 0; const lostAt = (sim.lost || []).join(' '); sim.lost = []
+  return { at: `${Math.round(tp.x)},${Math.round(tp.y)} tr${tr} ${sim.tv}`, lostAt, course: index + 1, style: pol.name, out, time: Math.round(t * 10) / 10, cake: run.cakeTiers, items: run.items.filter((e) => e.alive && e.id !== CAKE).length, oops: oopsN }
+}
+async function simAll(ids = [CAKE, 'eggs', 'vase', 'watermelon', 'balloons'], only = null) {
+  const rows = []
+  for (let i = 0; i < COURSES.length; i++) {
+    if (only && !only.includes(i + 1)) continue
+    for (const pol of POLICIES) { rows.push(simCourse(i, pol, ids)); await new Promise((r) => setTimeout(r, 0)) }
+  }
+  game.state = 'title'; run.items = pickItems(); run.cakeTiers = 3; loadCourse(0)
+  return rows
+}
+if (BOT || Q.has('debug')) window.__bd = { hits, thumbs, game, run, save, truck, get course() { return course }, get live() { return live }, startRun, loadCourse, simAll }

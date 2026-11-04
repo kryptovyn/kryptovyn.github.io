@@ -41,11 +41,11 @@ export const COURSES = [
   { theme: 'town', build: (b) => b.flat(4).bumps(5, 2.4, 0.38).flat(4).obj('seesaw', { L: 7 }).flat(9).hill(14, 2.6).flat(4).stairs(4, 2.4, -0.42).flat(5).finish() },
   { theme: 'town', build: (b) => b.flat(4).obj('tunnel', { L: 13, h: 2.1 }).bumps(5, 2.6, 0.32).flat(3).ramp(6, 1.3).gap(6, -0.6).flat(3).obj('boxes', { n: 10 }).flat(8).obj('fan', { L: 12, dir: -1 }).flat(13).finish() },
   { theme: 'country', build: (b) => b.flat(4).hill(16, 3).hill(12, 2).flat(4).rope(15).flat(5).hill(10, 1.4).flat(4).finish() },
-  { theme: 'country', build: (b) => b.flat(4).obj('barrels', { at: 24, h: 5 }).slope(24, 5).flat(6).obj('tramp').flat(2.4).gap(9, 1.6).flat(8).bumps(3).flat(4).finish() },
+  { theme: 'country', build: (b) => b.flat(4).obj('barrels', { at: 24, h: 5 }).slope(24, 5).flat(6).obj('tramp').flat(2.4).gap(4.5, 0).slope(10, -3.2).bumps(3).flat(4).finish() },
   { theme: 'mountain', build: (b) => b.obj('brokenBridge', { x: 12 }).flat(6).slope(12, 2.6).flat(3).lift(4.8, 4.6).flat(8).obj('wrecker', { dx: 2 }).flat(10).slope(16, -5).flat(5).finish() },
-  { theme: 'snow', build: (b) => b.flat(5).ice(22, -6).flat(3).ramp(6, 1.6).gap(9, -2).flat(6).obj('rocks').bumps(4, 2.2, 0.3).flat(5).finish() },
+  { theme: 'snow', build: (b) => b.flat(5).ice(18, -4).flat(3).ramp(6, 1.1).gap(7, -0.8).slope(11, -3).obj('rocks').bumps(4, 2.2, 0.3).flat(5).finish() },
   { theme: 'mountain', build: (b) => b.flat(5).collapse(16).flat(5).obj('windmill', { dx: 4 }).flat(10).hill(12, 2.2).obj('barrels', { at: 0, h: 0, back: true }).flat(4).finish() },
-  { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 2.0 }).bumps(4, 2.4, 0.3).flat(4).finish() },
+  { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 1.95 }).bumps(4, 2.4, 0.44).flat(4).finish() },
   { theme: 'city', build: (b) => b.flat(4).slope(18, -4).flat(2).ramp(7, 2.1).gap(8, -2.4).obj('cars', { back: 8 }).flat(3).obj('boxes', { n: 10 }).flat(7).bumps(4).flat(3).obj('wrecker', { dx: 2 }).flat(10).finish().obj('wedding', { x: b.finishX + 9 }) },
 ]
 
@@ -334,10 +334,13 @@ function makeObject(world, o, course) {
     return { span: [o.x, o.x + 2.4], update() {} }
   }
   if (o.kind === 'rocks') {
-    let fired = false
+    let fired = false, since = 0
     const live = []
     return {
+      // A careful driver sees the rocks start to fall and stops until they land.
+      botWait(x) { return fired && since < 2.4 && x < o.x + 2 ? 2 : 0 },
       update(dt, ctx) {
+        if (fired) since += dt
         if (!fired && ctx.truckX() > o.x - 5) {
           fired = true; ctx.sound('boom', 0.4, 0.6); ctx.shake(0.4)
           for (let i = 0; i < 5; i++) {
