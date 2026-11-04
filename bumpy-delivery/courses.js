@@ -193,7 +193,7 @@ function makeObject(world, o, course) {
       const m = add(box(s, s, s, pick([0xd9a066, 0xc98a55, 0xe8b878])))
       m.add(at(box(s + 0.01, 0.07, s + 0.01, 0x8a5a3c), 0, 0)); links.push(linkMesh(bx, m))
     }
-    return { update: () => syncLinks(links) }
+    return { span: [o.x - 1, o.x + 3], update: () => syncLinks(links) }
   }
   if (o.kind === 'seesaw') {
     const cx = o.x + o.L / 2, cy = o.y + 0.55
@@ -205,7 +205,7 @@ function makeObject(world, o, course) {
     const m = add(box(o.L, 0.22, 2.2, WOOD)); m.add(at(box(o.L, 0.04, 2.21, 0xffd23f), 0, 0.09))
     const tri = add(mesh(new THREE.ConeGeometry(0.6, 0.7, 3), 0x8a8fa8)); tri.position.set(cx, cy - 0.3, 0)
     const links = [linkMesh(plank, m)]
-    return { update: () => syncLinks(links) }
+    return { span: [o.x, o.x + o.L], update: () => syncLinks(links) }
   }
   if (o.kind === 'rope') {
     const x0 = o.x, y0 = o.y, x1 = o.x + o.L, y1 = o.y + o.dy, n = Math.round(o.L / 0.75), w = o.L / n
@@ -330,7 +330,7 @@ function makeObject(world, o, course) {
     pad.createFixture(new pl.Box(1.2, 0.12), { friction: 0.8, userData: { tramp: true } })
     const m = add(box(2.4, 0.24, 2.4, 0xff4f6d)); m.position.set(o.x + 1.2, o.y + 0.12, 0)
     for (let i = 0; i < 4; i++) m.add(at(box(0.32, 0.25, 2.41, 0xffffff), -0.9 + i * 0.6, 0))
-    return { update() {} }
+    return { span: [o.x, o.x + 2.4], update() {} }
   }
   if (o.kind === 'rocks') {
     let fired = false
@@ -364,7 +364,7 @@ function makeObject(world, o, course) {
     m.add(ball(0.3, 0xffd23f))
     add(at(box(0.6, 4.6, 0.6, 0xf4ecc6), cx, o.y + 2.2, -1.2))
     hub.setAngularVelocity(-0.95)
-    return { update() { m.rotation.z = hub.getAngle() } }
+    return { span: [cx - 2.5, cx + 2.5], update() { m.rotation.z = hub.getAngle() } }
   }
   if (o.kind === 'fan') {
     const fx = o.dir < 0 ? o.x + o.L + 1.2 : o.x - 1.2, fy = o.y + 1.3

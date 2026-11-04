@@ -327,14 +327,16 @@ function clearCourse() {
   if (course) { scene.remove(course.group); disposeGroup(course.group) }
   course = null
 }
-function loadCourse(index, { story = false } = {}) {
+function loadCourse(index, { story = false, at = null } = {}) {
   clearCourse()
   newWorld()
   run.course = index
   course = buildCourse(world, index)
   scene.add(course.group)
   scene.background?.dispose?.(); scene.background = skyTexture(course.theme)
-  makeTruck(course.startX, course.startY + 0.85)
+  const sx = at ?? course.startX
+  makeTruck(sx, course.groundY(sx) + 0.85)
+  run.safeX = sx
   syncTruck()
   if (!story) loadCargo()
   run.flipT = 0; run.stuckT = 0
@@ -367,14 +369,22 @@ function dropRest() {
   rest.forEach((e, i) => setTimeout(() => { if (run.phase === 'story' && course?.index === 0) { spawnItem(e, xs[i], BED.floor + 1.4 + (i > 1 ? 0.7 : 0)); audio.play('thud', 0.7, 0.9 + i * 0.1); shake(0.15) } }, i * 260))
 }
 function beginDrive() {
-  run.phase = 'ready'; run.phaseT = 0
+  run.phase = 'ready'; run.phaseT = 0; run.fresh = true
   // A skipped scene can leave part of the cargo unloaded: load it again in one go.
   if (live.filter((i) => i.alive).length < run.items.filter((e) => e.alive).length) { for (const i of live) { scene.remove(i.group); world.destroyBody(i.body) } live = []; loadCargo() }
   hide('story')
   $('holdTip').textContent = run.course === 0 && !save.runs ? t('hold') : ''
 }
-function restartCourse() {
-  loadCourse(run.course)
+// A slip-up costs a few metres, not the whole road: start again a bit behind the last spot
+// where both wheels were on solid ground (never on a bridge, lift, seesaw or trampoline).
+function respawnX() {
+  const blocked = (x) => course.groundY(x) === null || course.groundY(x - 1.5) === null || course.groundY(x + 1.5) === null || course.objs.some((o) => o.span && x > o.span[0] - 2 && x < o.span[1] + 2)
+  let x = Math.max(course.startX, run.safeX - 3)
+  while (x > course.startX && blocked(x)) x -= 0.5
+  return Math.max(course.startX, x)
+}
+function restartCourse(fromStart = false) {
+  loadCourse(run.course, { at: fromStart ? null : respawnX() })
   run.phase = 'ready'; run.phaseT = 0
 }
 function nextCourse() {
@@ -391,7 +401,7 @@ function nextCourse() {
     return
   }
   loadCourse(n)
-  run.phase = 'ready'; run.phaseT = 0
+  run.phase = 'ready'; run.phaseT = 0; run.fresh = true
 }
 let bridgeFall = 0
 function collapseBridge() { bridgeFall = 0.001; audio.play('boom', 0.7, 0.7); audio.play('wood', 0.8); shake(0.5) }
@@ -404,11 +414,11 @@ function courseClear() {
   if (run.course === COURSES.length - 1) { run.phase = 'arrive'; banner(t('clearAll'), true); return }
   banner(t('clear'), true)
 }
-function oops(lostTier) {
+function oops(lostTier, why = 'oops') {
   if (run.phase !== 'drive') return
   run.phase = 'oops'; run.phaseT = 0
   audio.play('deny', 0.8); buzz(80); shake(0.3)
-  banner(t('oops'))
+  banner(t(why))
   if (lostTier) loseTier(live.find((i) => i.tiers), true)
 }
 function loseTier(cake, quiet) {
@@ -540,7 +550,7 @@ function updatePlay(dt) {
   run.phaseT += dt
   if (run.story) run.story.tick(dt)
   if (['ready', 'drive', 'oops'].includes(ph)) run.time += dt
-  if (ph === 'ready' && run.phaseT > 0.9) { run.phase = 'drive'; run.phaseT = 0; banner(t('go'), true); audio.play('coin', 0.6, 1.2) }
+  if (ph === 'ready' && run.phaseT > 0.9) { run.phase = 'drive'; run.phaseT = 0; if (run.fresh) banner(t('go'), true); run.fresh = false; audio.play('coin', 0.6, 1.2) }
   if (ph === 'oops' && run.phaseT > 1.0) restartCourse()
   if (ph === 'clear' && run.phaseT > 1.6) nextCourse()
   if (ph === 'arrive' && run.phaseT > 1.4) {
@@ -637,13 +647,16 @@ function watchTruck(dt) {
   run.flipT = Math.abs(a) > 1.9 ? run.flipT + dt : 0
   const v = c.getLinearVelocity()
   run.stuckT = Math.hypot(v.x, v.y) < 0.25 && (input.gas || input.back) ? run.stuckT + dt : 0
-  if (run.flipT > 1.2 || p.y < course.killY || run.stuckT > 5) oops(false)
+  if (run.flipT > 1.2 || p.y < course.killY || run.stuckT > 5) oops(false, run.flipT > 1.2 ? 'flipped' : p.y < course.killY ? 'fell' : 'stuck')
+  else if (Math.abs(a) < 0.5 && truck.wheels.every(touching) && course.groundY(p.x) !== null && Math.abs(course.groundY(p.x) - p.y) < 1.4) run.safeX = Math.max(run.safeX, p.x)
 }
 function botInput() {
   input.gas = false; input.back = false
   if (run.phase !== 'drive') return
   const c = truck.chassis, a = wrapAngle(c.getAngle()), x = c.getPosition().x, v = c.getLinearVelocity()
   const air = !truck.wheels.some(touching)
+  // ?bot&human: just hold ▶ like a first-time player.
+  if (Q.has('human')) { input.gas = true; return }
   if (air) { if (a > 0.3) input.back = true; else if (a < -0.3) input.gas = true; return }
   input.gas = a < 0.55 && v.x < 7.5
   for (const o of course.objs) {
