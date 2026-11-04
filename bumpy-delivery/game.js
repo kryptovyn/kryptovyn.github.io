@@ -3,6 +3,7 @@ import { THREE, pl, V, clamp, lerp, rnd, pick, mat, mesh, box, ball, cyl, at, cr
 import { TEXT, LANGUAGES } from './text.js'
 import { KINDS, CAKE, PICKABLE } from './cargo.js'
 import { COURSES, LIMIT, buildCourse, skyTexture } from './courses.js'
+import { TRUCKS } from './trucks.js'
 
 const $ = (id) => document.getElementById(id)
 const Q = new URLSearchParams(location.search)
@@ -17,7 +18,7 @@ const t = (key) => TEXT[lang][key] ?? TEXT.en[key] ?? key
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'bumpy_delivery'
-const save = { bestTime: 0, bestCourse: 0, reach: 0, runs: 0, clears: 0, music: 0.6, sfx: 0.9, shake: 1, lang: '', seenStory: 0 }
+const save = { bestTime: 0, bestCourse: 0, reach: 0, runs: 0, clears: 0, perfect: 0, truck: 'bakery', music: 0.6, sfx: 0.9, shake: 1, lang: '', seenStory: 0 }
 let saveTimer = 0
 function writeSave() {
   clearTimeout(saveTimer)
@@ -198,12 +199,15 @@ function disposeGroup(g) {
 }
 
 // ---------------------------------------------------------------- truck
-const TRUCK = { speed: 20, torque: 15, air: 9, hz: 4.2, damp: 0.72, wheelR: 0.42 }
+const TRUCK = { ...TRUCKS[0] }
+let truckDef = TRUCKS[0]
+function setTruck(id) { truckDef = TRUCKS.find((d) => d.id === id) || TRUCKS[0]; Object.assign(TRUCK, truckDef) }
+const truckOpen = (d) => !d.unlock || (d.unlock.reach && save.reach >= d.unlock.reach) || (d.unlock.clears && save.clears >= d.unlock.clears) || (d.unlock.perfect && save.perfect >= d.unlock.perfect)
 const BED = { x0: -1.3, x1: 0.5, floor: 0.1 }
 const truck = { chassis: null, wheels: [], joints: [], group: null, wheelMeshes: [] }
-function truckMesh() {
+function truckMesh(def) {
   const g = new THREE.Group()
-  const cream = 0xfff1dc, pink = 0xff8fb1, red = 0xff4f6d
+  const cream = def.trim, pink = def.body, red = def.rail
   g.add(at(box(2.8, 0.22, 1.3, cream), 0, 0))
   g.add(at(box(2.82, 0.24, 1.32, pink), 0, -0.2))
   for (const z of [-0.62, 0.62]) g.add(at(box(1.84, 0.22, 0.06, red), -0.4, 0.2, z))
@@ -211,14 +215,20 @@ function truckMesh() {
   const cab = new THREE.Group(); cab.position.set(0.95, 0.5, 0); g.add(cab)
   cab.add(box(0.9, 0.84, 1.28, pink)); cab.add(at(box(0.92, 0.12, 1.3, cream), 0, 0.42))
   cab.add(at(box(0.5, 0.36, 1.3, 0xbfefff), 0.08, 0.12)); cab.add(at(box(0.06, 0.34, 1.0, 0xbfefff), 0.46, 0.12))
-  const dog = critter('dog', 0xffe0b0, { cap: 0xff4f6d }); dog.scale.setScalar(0.42); dog.position.set(0.02, -0.38, 0); dog.rotation.y = Math.PI / 2; cab.add(dog)
+  const dog = critter(def.driver, def.driver === 'bear' ? 0xc98a55 : def.driver === 'cat' ? 0xffb36b : 0xffe0b0, { cap: def.cap }); dog.scale.setScalar(0.42); dog.position.set(0.02, -0.38, 0); dog.rotation.y = Math.PI / 2; cab.add(dog)
   g.add(at(box(0.1, 0.12, 0.3, 0xfff3a8), 1.42, 0.02, 0.45)); g.add(at(box(0.1, 0.12, 0.3, 0xfff3a8), 1.42, 0.02, -0.45))
+  // Roof extras so each truck reads at a glance.
+  if (def.extra === 'cone') { const c = mesh(new THREE.ConeGeometry(0.2, 0.5, 10), 0xe0a060); c.rotation.z = Math.PI; cab.add(at(c, 0, 0.72)); cab.add(at(ball(0.24, 0xff8fb1), 0, 1.0)); cab.add(at(ball(0.07, 0xff4f6d, 8), 0, 1.24)) }
+  if (def.extra === 'siren') { cab.add(at(box(0.5, 0.1, 0.5, 0xffffff), 0, 0.52)); cab.add(at(ball(0.13, 0xff2a2a, 10), -0.12, 0.64)); cab.add(at(ball(0.13, 0x4fa8ff, 10), 0.12, 0.64)) }
+  if (def.extra === 'bottle') { cab.add(at(cyl(0.16, 0.18, 0.5, 0xffffff, 12), 0, 0.73)); cab.add(at(cyl(0.09, 0.1, 0.12, 0xffffff, 10), 0, 1.03)); cab.add(at(cyl(0.11, 0.11, 0.06, 0x4fc3ff, 10), 0, 1.11)) }
+  if (def.extra === 'crown') { cab.add(at(cyl(0.26, 0.24, 0.16, 0xffd23f, 10), 0, 0.56)); for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; cab.add(at(mesh(new THREE.ConeGeometry(0.06, 0.18, 4), 0xffd23f), Math.cos(a) * 0.22, 0.72, Math.sin(a) * 0.22)) } cab.add(at(ball(0.06, 0xff4f6d, 8), 0, 0.8, 0.25)) }
+  if (def.extra === 'flames') for (const z of [-0.67, 0.67]) for (let i = 0; i < 3; i++) g.add(at(box(0.36, 0.08, 0.02, i % 2 ? 0xffd23f : 0xff7a1a), -0.9 + i * 0.5, -0.2, z))
   scene.add(g)
   const wheels = []
   for (let i = 0; i < 2; i++) {
     const w = new THREE.Group()
-    const tyre = cyl(TRUCK.wheelR, TRUCK.wheelR, 0.36, 0x2b1d3a, 18); tyre.rotation.x = Math.PI / 2; w.add(tyre)
-    const hub = cyl(0.2, 0.2, 0.38, 0xffd23f, 10); hub.rotation.x = Math.PI / 2; w.add(hub)
+    const tyre = cyl(def.wheelR, def.wheelR, def.id === 'monster' ? 0.56 : 0.36, 0x2b1d3a, 18); tyre.rotation.x = Math.PI / 2; w.add(tyre)
+    const hub = cyl(def.wheelR * 0.48, def.wheelR * 0.48, def.id === 'monster' ? 0.58 : 0.38, def.id === 'gold' ? 0xffffff : 0xffd23f, 10); hub.rotation.x = Math.PI / 2; w.add(hub)
     w.add(at(box(0.36, 0.06, 0.39, 0xffffff), 0, 0))
     scene.add(w); wheels.push(w)
   }
@@ -226,8 +236,8 @@ function truckMesh() {
 }
 function makeTruck(x, y) {
   const c = world.createBody({ type: 'dynamic', position: V(x, y), angularDamping: 0.25 })
-  c.createFixture(new pl.Box(1.4, 0.1, V(0, 0)), { density: 3.2, friction: 0.7 })
-  c.createFixture(new pl.Box(1.4, 0.12, V(0, -0.22)), { density: 3.2, friction: 0.6 })
+  c.createFixture(new pl.Box(1.4, 0.1, V(0, 0)), { density: TRUCK.density, friction: 0.7 })
+  c.createFixture(new pl.Box(1.4, 0.12, V(0, -0.22)), { density: TRUCK.density, friction: 0.6 })
   c.createFixture(new pl.Box(0.06, 0.3, V(-1.36, 0.38)), { density: 1, friction: 0.7 })
   c.createFixture(new pl.Box(0.45, 0.42, V(0.95, 0.5)), { density: 1.4, friction: 0.6 })
   c.setUserData({ part: 'chassis' })
@@ -239,7 +249,10 @@ function makeTruck(x, y) {
     const j = world.createJoint(new pl.WheelJoint({ motorSpeed: 0, maxMotorTorque: TRUCK.torque, enableMotor: true, frequencyHz: TRUCK.hz, dampingRatio: TRUCK.damp }, c, w, w.getPosition(), V(0, 1)))
     truck.wheels.push(w); truck.joints.push(j)
   }
-  if (!truck.group) { const m = truckMesh(); truck.group = m.g; truck.wheelMeshes = m.wheels }
+  if (truck.groupId !== truckDef.id) {
+    if (truck.group) { scene.remove(truck.group); truck.wheelMeshes.forEach((w) => scene.remove(w)) }
+    const m = truckMesh(truckDef); truck.group = m.g; truck.wheelMeshes = m.wheels; truck.groupId = truckDef.id
+  }
 }
 const touching = (b) => { for (let ce = b.getContactList(); ce; ce = ce.next) if (ce.contact.isTouching()) return true; return false }
 function syncTruck() {
@@ -340,7 +353,7 @@ function loadCourse(index, { story = false, at = null } = {}) {
   scene.add(course.group)
   scene.background?.dispose?.(); scene.background = skyTexture(course.theme)
   const sx = at ?? course.startX
-  makeTruck(sx, course.groundY(sx) + 0.85)
+  makeTruck(sx, course.groundY(sx) + 0.85 + (TRUCK.wheelR - 0.42))
   run.safeX = sx; run.safeY = course.groundY(sx) + 0.85
   syncTruck()
   if (!story) loadCargo()
@@ -349,6 +362,8 @@ function loadCourse(index, { story = false, at = null } = {}) {
   sync()
 }
 function startRun() {
+  if (!truckOpen(truckDef) && !BOT) { audio.play('deny', 0.7); return }
+  run.openAtStart = TRUCKS.filter(truckOpen).map((d) => d.id)
   const first = Q.has('c') ? clamp(+Q.get('c'), 0, COURSES.length - 1) : 0
   audio.unlock()
   hide('title'); hide('result'); hide('panel'); hide('pause'); show('hud')
@@ -560,6 +575,7 @@ function showResult(won) {
   save.runs++
   let fresh = false
   // A run started from a later road (?c= test link) never counts as a record.
+  if (won && !Q.has('c') && run.cakeTiers >= 3) save.perfect = (save.perfect || 0) + 1
   if (won && !Q.has('c')) { save.clears++; if (!save.bestTime || run.time < save.bestTime) { save.bestTime = run.time; fresh = true } }
   if (!Q.has('c')) save.reach = Math.max(save.reach, won ? COURSES.length : run.course + 1)
   writeSave()
@@ -570,6 +586,11 @@ function showResult(won) {
   $('resTimeL').textContent = won ? t('time') : t('course'); $('resTime').textContent = won ? fmt(run.time) : `${run.course + 1} / ${COURSES.length}`
   $('resBestL').textContent = save.bestTime ? t('best') : t('farthest'); $('resBest').textContent = save.bestTime ? fmt(save.bestTime) : `${save.reach} / ${COURSES.length}`
   $('resNew').textContent = t('newBest'); $('resNew').classList.toggle('hide', !fresh)
+  const opened = TRUCKS.filter((d) => truckOpen(d) && !(run.openAtStart || []).includes(d.id))
+  $('resUnlock').textContent = opened.length ? `${t('newTruck')} ${opened.map((d) => t('truck_' + d.id)).join(', ')}` : ''
+  $('resUnlock').classList.toggle('hide', !opened.length)
+  run.openAtStart = TRUCKS.filter(truckOpen).map((d) => d.id)
+  if (opened.length) { setTimeout(() => audio.play('win', 0.7, 1.2), 400); garage.i = TRUCKS.indexOf(opened[opened.length - 1]); save.truck = opened[opened.length - 1].id; setTruck(save.truck) }
   const canCont = !won && !run.continued
   $('contBtn').classList.toggle('hide', !canCont)
   $('contBtn').textContent = run.reason === 'time' ? t('cont2') : t('cont1')
@@ -752,7 +773,7 @@ function cameraGoal() {
   if (cam === 'bakery') return { x: -6.5, y: course.startY + 2.2, d: fit(9, 9), lx: -6.5, ly: course.startY + 1.6 }
   if (cam === 'bridge') return { x: 18, y: course.startY + 1, d: fit(22, 14), lx: 20, ly: course.startY }
   if (cam === 'couple' && course.couple) { const cy = course.groundY(course.couple.x); return { x: course.couple.x - 1, y: cy + 2.2, d: fit(10, 9), lx: course.couple.x - 1, ly: cy + 1.4 } }
-  if (cam === 'title') return { x: -7.2, y: course.startY + 2.4, d: fit(9.5, 12), lx: -7.2, ly: course.startY + 2.1 }
+  if (cam === 'title') { const up = aspect > 1 ? 1.7 : 0; return { x: -7.2, y: course.startY + 2.4 - up, d: fit(9.5, 12), lx: -7.2, ly: course.startY + 2.1 - up } }
   if (cam === 'truck') return { x: p.x - 1, y: p.y + 1.4, d: fit(8.5, 9), lx: p.x - 1, ly: p.y + 0.9 }
   const ahead = clamp(v.x * 0.3, -1.2, 2.6) + 1.3
   const speedZoom = clamp(Math.hypot(v.x, v.y) / 9, 0, 1)
@@ -768,11 +789,31 @@ function placeCamera(dt) {
   camera.lookAt(view.lx, view.ly, 0)
 }
 
+// ---------------------------------------------------------------- garage
+const garage = { i: 0 }
+function lockText(d) { const u = d.unlock; return (u.reach ? t('lockReach') : u.clears ? t('lockClears') : t('lockPerfect')).replace('{n}', u.reach || u.clears || u.perfect) }
+function showGarage() {
+  const d = TRUCKS[garage.i], open = truckOpen(d)
+  $('truckName').innerHTML = `<b>${t('truck_' + d.id)}</b><small>${open ? `${garage.i + 1} / ${TRUCKS.length}` : `${t('locked')} · ${lockText(d)}`}</small>`
+  $('truckName').classList.toggle('locked', !open)
+  $('playBtn').classList.toggle('off', !open)
+}
+function pickTruck(step) {
+  if (game.state !== 'title') return
+  garage.i = (garage.i + step + TRUCKS.length) % TRUCKS.length
+  const d = TRUCKS[garage.i]
+  setTruck(d.id)
+  if (truckOpen(d)) { save.truck = d.id; writeSave() }
+  loadCourse(0)
+  audio.play('click', 0.6, 1.1)
+}
+
 // ---------------------------------------------------------------- hud
 function sync() {
   $('playBtn').textContent = t('play')
   $('tagline').textContent = t('tagline')
   $('bestBox').textContent = save.bestTime ? `${t('best')} ${fmt(save.bestTime)}` : save.reach ? `${t('farthest')} ${save.reach} / ${COURSES.length}` : ''
+  showGarage()
   $('pauseTitle').textContent = t('paused'); $('resumeBtn').textContent = t('resume'); $('quitBtn').textContent = t('quit')
   $('panelClose').textContent = t('close')
   if (game.state !== 'play') return
@@ -854,6 +895,8 @@ function openSettings() {
 // ---------------------------------------------------------------- input
 const tap = (id, fn) => $(id).addEventListener('click', () => { audio.unlock(); audio.play('click', 0.5); fn() })
 tap('playBtn', startRun)
+tap('truckPrev', () => pickTruck(-1))
+tap('truckNext', () => pickTruck(1))
 tap('setBtn', openSettings)
 tap('panelClose', () => { hide('panel'); if (game.state === 'title') show('title') })
 tap('againBtn', startRun)
@@ -918,6 +961,7 @@ async function boot() {
   await platform.init()
   bar.style.width = '60%'
   await readSave()
+  { const d = TRUCKS.find((x) => x.id === (Q.get('truck') || save.truck)); if (d && (truckOpen(d) || BOT)) { setTruck(d.id); garage.i = TRUCKS.indexOf(d) } }
   const want = Q.get('lang') || save.lang || (platform.ready ? window.bridge.platform.language : navigator.language) || 'en'
   lang = LANG_KEYS.includes(Q.get('lang')) ? Q.get('lang') : LANG_KEYS.includes(save.lang) ? save.lang : (LANG_KEYS.find((k) => String(want).toLowerCase().startsWith(k)) || 'en')
   makeThumbs()
@@ -957,7 +1001,7 @@ function simInput(pol) {
     if (w === 2) { input.gas = false; input.back = v.x > 0.3 }
   }
 }
-const POLICIES = [{ name: 'hold', hold: true }, ...[3.5, 5, 6.5, 8, 9.5].map((v) => ({ name: `v${v}`, v })), { name: 'smart4', slow: 4, fast: 9.5 }, { name: 'smart6', slow: 6, fast: 9.5 }]
+const POLICIES = [{ name: 'hold', hold: true }, ...[3.5, 5, 6.5, 7.25, 8, 9.5].map((v) => ({ name: `v${v}`, v })), { name: 'smart4', slow: 4, fast: 9.5 }, { name: 'smart5', slow: 5, fast: 8.5 }, { name: 'smart6', slow: 6, fast: 9.5 }]
 function simCourse(index, pol, ids) {
   run.items = ids.map((id) => ({ id, alive: true })); run.cakeTiers = 3; run.time = 0; run.continued = false
   game.state = 'sim'; sim.policy = pol
@@ -982,13 +1026,14 @@ function simCourse(index, pol, ids) {
   const tr = sim.tramp || 0; sim.tramp = 0; const lostAt = (sim.lost || []).join(' '); sim.lost = []
   return { at: `${Math.round(tp.x)},${Math.round(tp.y)} tr${tr} ${sim.tv}`, lostAt, course: index + 1, style: pol.name, out, time: Math.round(t * 10) / 10, cake: run.cakeTiers, items: run.items.filter((e) => e.alive && e.id !== CAKE).length, oops: oopsN }
 }
-async function simAll(ids = [CAKE, 'eggs', 'vase', 'watermelon', 'balloons'], only = null) {
-  const rows = []
+async function simAll(ids = [CAKE, 'eggs', 'vase', 'watermelon', 'balloons'], only = null, truckId = 'bakery') {
+  const rows = [], keep = truckDef.id
+  setTruck(truckId)
   for (let i = 0; i < COURSES.length; i++) {
     if (only && !only.includes(i + 1)) continue
     for (const pol of POLICIES) { rows.push(simCourse(i, pol, ids)); await new Promise((r) => setTimeout(r, 0)) }
   }
-  game.state = 'title'; run.items = pickItems(); run.cakeTiers = 3; loadCourse(0)
+  game.state = 'title'; run.items = pickItems(); run.cakeTiers = 3; setTruck(keep); loadCourse(0)
   return rows
 }
 if (BOT || Q.has('debug')) window.__bd = { hits, thumbs, game, run, save, truck, get course() { return course }, get live() { return live }, startRun, loadCourse, simAll }

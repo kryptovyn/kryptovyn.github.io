@@ -43,10 +43,10 @@ export const COURSES = [
   { theme: 'country', build: (b) => b.flat(4).hill(16, 3).hill(12, 2).flat(4).rope(15).flat(5).hill(10, 1.4).flat(4).finish() },
   { theme: 'country', build: (b) => b.flat(4).obj('barrels', { at: 24, h: 5 }).slope(24, 5).flat(6).obj('tramp').flat(2.4).gap(4.5, 0).slope(10, -3.2).bumps(3).flat(4).finish() },
   { theme: 'mountain', build: (b) => b.obj('brokenBridge', { x: 12 }).flat(6).slope(12, 2.6).flat(3).lift(4.8, 4.6).flat(8).obj('wrecker', { dx: 2 }).flat(10).slope(16, -5).flat(5).finish() },
-  { theme: 'snow', build: (b) => b.flat(5).ice(18, -4).flat(3).ramp(6, 1.1).gap(7, -0.8).slope(11, -3).obj('rocks').bumps(4, 2.2, 0.3).flat(5).finish() },
+  { theme: 'snow', build: (b) => b.flat(5).ice(18, -4).flat(3).ramp(6, 1.1).gap(6.5, -0.5).slope(11, -3.3).obj('rocks').bumps(4, 2.2, 0.3).flat(5).finish() },
   { theme: 'mountain', build: (b) => b.flat(5).collapse(16).flat(5).obj('windmill', { dx: 4 }).flat(10).hill(11, 2.6).obj('barrels', { at: 0, h: 0, back: true }).flat(4).finish() },
   { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 1.95 }).bumps(4, 2.4, 0.5).flat(4).finish() },
-  { theme: 'city', build: (b) => b.flat(4).slope(18, -4).flat(2).ramp(7, 2.1).gap(8, -2.4).obj('cars', { back: 8 }).flat(3).obj('boxes', { n: 10 }).flat(7).bumps(4).flat(3).obj('wrecker', { dx: 2 }).flat(10).finish().obj('wedding', { x: b.finishX + 9 }) },
+  { theme: 'city', build: (b) => b.flat(4).slope(18, -4).flat(2).ramp(7, 2.1).gap(7.5, -0.6).slope(8, -2.8).obj('cars', { back: 8 }).flat(3).obj('boxes', { n: 10 }).flat(7).bumps(4).flat(3).obj('wrecker', { dx: 2 }).flat(10).finish().obj('wedding', { x: b.finishX + 9 }) },
 ]
 
 // ---------------------------------------------------------------- building

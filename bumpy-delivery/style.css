@@ -97,3 +97,16 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 @keyframes shakeX { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @keyframes banner { 0% { opacity: 0; transform: translateX(-50%) scale(.4); } 18% { opacity: 1; transform: translateX(-50%) scale(1.15); } 30% { transform: translateX(-50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) scale(1.05); } }
 @keyframes bob { 50% { top: -54px; } }
+
+/* garage: pick a truck on the title screen */
+.garage { display: flex; align-items: center; gap: 10px; margin-top: 10px; pointer-events: auto; }
+.garage .round { width: 52px; height: 52px; }
+.tri { width: 0; height: 0; border-top: 11px solid transparent; border-bottom: 11px solid transparent; }
+.tri.l { border-right: 16px solid var(--ink); margin-right: 3px; }
+.tri.r { border-left: 16px solid var(--ink); margin-left: 3px; }
+.truckName { min-width: 200px; max-width: 58vw; padding: 6px 14px; border-radius: 18px; background: rgba(43,29,58,.82); color: #fff; text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.truckName b { font-size: 21px; }
+.truckName small { font-size: 15px; color: #ffe08a; }
+.truckName.locked b { color: #c9bfd6; }
+.go.off { filter: grayscale(.9) brightness(.8); animation: none; }
+.resUnlock { margin: 4px 0; padding: 6px 16px; border-radius: 16px; background: var(--sun); color: var(--ink); font-size: 22px; box-shadow: 0 0 0 3px var(--ink); animation: bob .8s infinite; }
