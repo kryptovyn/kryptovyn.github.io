@@ -40,7 +40,7 @@ export const KINDS = {
     },
   },
   eggs: {
-    w: 0.5, h: 0.2, breakV: 3.8,
+    w: 0.5, h: 0.2, breakV: 5,
     make(world, x, y) {
       const b = body(world, x, y + 0.1); fx(b, boxShape(0.5, 0.2), 0.5)
       const g = new THREE.Group(); g.add(at(box(0.5, 0.12, 0.34, 0xc9a36b), 0, -0.04))
@@ -49,7 +49,7 @@ export const KINDS = {
     },
   },
   fireworks: {
-    w: 0.26, h: 0.5, breakV: 5, special: 'explode',
+    w: 0.26, h: 0.5, breakV: 5.8, special: 'explode',
     make(world, x, y) {
       const b = body(world, x, y + 0.25); fx(b, boxShape(0.26, 0.5), 0.6)
       const g = new THREE.Group(); g.add(box(0.26, 0.5, 0.26, 0xe8203a))
@@ -68,7 +68,7 @@ export const KINDS = {
     },
   },
   fishbowl: {
-    w: 0.44, h: 0.44, breakV: 4.4,
+    w: 0.44, h: 0.44, breakV: 5.2,
     make(world, x, y) {
       const b = body(world, x, y + 0.22); fx(b, new pl.Circle(0.22), 0.9, 0.5, 0.1)
       const g = new THREE.Group()
@@ -145,7 +145,7 @@ export const KINDS = {
     },
   },
   vase: {
-    w: 0.28, h: 0.56, breakV: 4.2,
+    w: 0.28, h: 0.56, breakV: 5.2,
     make(world, x, y) {
       const b = body(world, x, y + 0.28)
       fx(b, new pl.Polygon([V(-0.1, -0.28), V(0.1, -0.28), V(0.14, 0.08), V(0.07, 0.28), V(-0.07, 0.28), V(-0.14, 0.08)]), 0.7)
@@ -156,7 +156,7 @@ export const KINDS = {
     },
   },
   tv: {
-    w: 0.5, h: 0.4, breakV: 4.8,
+    w: 0.5, h: 0.4, breakV: 5.6,
     make(world, x, y) {
       const b = body(world, x, y + 0.2); fx(b, boxShape(0.5, 0.4), 0.8)
       const g = new THREE.Group(); g.add(box(0.5, 0.4, 0.36, 0x9c8a7a)); g.add(at(box(0.36, 0.28, 0.02, 0x2b3a4a), -0.04, 0, 0.18))
@@ -166,7 +166,7 @@ export const KINDS = {
     },
   },
   snowman: {
-    w: 0.4, h: 0.56, breakV: 5.2,
+    w: 0.4, h: 0.56, breakV: 5.8,
     make(world, x, y) {
       const b = body(world, x, y + 0.2); fx(b, new pl.Circle(V(0, 0), 0.2), 0.6); fx(b, new pl.Circle(V(0, 0.3), 0.14), 0.6)
       const g = new THREE.Group(); g.add(ball(0.2, 0xffffff)); g.add(at(ball(0.14, 0xffffff), 0, 0.3))

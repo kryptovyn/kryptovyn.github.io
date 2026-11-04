@@ -341,7 +341,7 @@ function loadCourse(index, { story = false, at = null } = {}) {
   run.safeX = sx; run.safeY = course.groundY(sx) + 0.85
   syncTruck()
   if (!story) loadCargo()
-  run.flipT = 0; run.stuckT = 0
+  run.flipT = 0; run.stuckT = 0; air.t = 0; air.spin = 0; air.check = 0
   snapCamera()
   sync()
 }
@@ -390,9 +390,25 @@ function restartCourse(fromStart = false) {
   loadCourse(run.course, { at: fromStart ? null : respawnX() })
   run.phase = 'ready'; run.phaseT = 0
 }
+// A new road brings one new parcel for a lost one, so the bed never stays empty for long.
+function refillCargo() {
+  const slot = run.items.findIndex((e) => e.id !== CAKE && !e.alive)
+  if (slot < 0) return
+  const have = new Set(run.items.map((e) => e.id))
+  run.items[slot] = { id: pick(PICKABLE.filter((id) => !have.has(id))), alive: true }
+  run.newCargo = run.items[slot].id
+}
+function announceCargo() {
+  if (!run.newCargo) return
+  const it = live.find((i) => i.alive && i.entry.id === run.newCargo); run.newCargo = null
+  if (!it) return
+  const p = it.body.getPosition()
+  setTimeout(() => { pop(t('newCargo'), it.entry.id, p.x, p.y + 1.2); audio.play('coin', 0.7, 1.4) }, 350)
+}
 function nextCourse() {
   const n = run.course + 1
   run.lastCourse = n
+  refillCargo()
   if (!Q.has('c')) { save.reach = Math.max(save.reach, n + 1); writeSave() }
   if (n === 5 && (!save.seenMid || Q.has('story'))) {
     loadCourse(5)
@@ -400,11 +416,12 @@ function nextCourse() {
     playStory([
       { who: 'radio', key: 's2a', cam: 'bridge', act: collapseBridge },
       { who: 'driver', key: 's2b', cam: 'truck' },
-    ], () => { save.seenMid = 1; writeSave(); beginDrive() })
+    ], () => { save.seenMid = 1; writeSave(); beginDrive(); announceCargo() })
     return
   }
   loadCourse(n)
   run.phase = 'ready'; run.phaseT = 0; run.fresh = true
+  announceCargo()
 }
 let bridgeFall = 0
 function collapseBridge() { bridgeFall = 0.001; audio.play('boom', 0.7, 0.7); audio.play('wood', 0.8); shake(0.5) }
@@ -659,7 +676,7 @@ function updateCargo(dt) {
     const lp = truck.chassis.getLocalPoint(p)
     const inBed = lp.x > -1.75 && lp.x < 0.8 && lp.y > -0.4 && lp.y < 3.4
     item.out = inBed ? 0 : item.out + dt
-    if (item.out > 0.8 || p.y < course.killY) lose(item)
+    if (item.out > 1.1 || p.y < course.killY) lose(item)
   }
 }
 function updateDebris(dt) {
@@ -676,8 +693,31 @@ function watchTruck(dt) {
   const v = c.getLinearVelocity()
   run.stuckT = Math.hypot(v.x, v.y) < 0.25 && (input.gas || input.back) ? run.stuckT + dt : 0
   if (inPit()) { fellInPit(); return }
+  airPraise(dt)
   if (run.flipT > 1.2 || run.stuckT > 5) oops(false, run.flipT > 1.2 ? 'flipped' : 'stuck')
   else if (Math.abs(a) < 0.5 && truck.wheels.every(touching) && course.groundY(p.x) !== null && Math.abs(course.groundY(p.x) - p.y) < 1.4) { if (p.x > run.safeX) { run.safeX = p.x; run.safeY = p.y } }
+}
+// Air time and flips are praised on landing, but only when the cake came through it whole.
+const air = { t: 0, spin: 0, check: 0, what: '', tiers: 0 }
+function airPraise(dt) {
+  const c = truck.chassis, flying = !truck.wheels.some(touching)
+  if (flying) { air.t += dt; air.spin += c.getAngularVelocity() * dt; return }
+  if (air.t > 0.5) {
+    const flips = Math.abs(air.spin) > Math.PI * 1.6
+    air.what = flips ? 'flip' : air.t > 1.1 ? 'bigAir' : 'niceLand'
+    air.check = 0.45; air.tiers = run.cakeTiers
+  }
+  air.t = 0; air.spin = 0
+  if (air.check > 0 && (air.check -= dt) <= 0) {
+    const ok = run.cakeTiers === air.tiers && run.cakeTiers > 0 && Math.abs(wrapAngle(c.getAngle())) < 0.6
+    if (ok && game.state === 'play') {
+      const p = c.getPosition()
+      pop(t(air.what), null, p.x, p.y + 1.8)
+      audio.play('coin', 0.8, air.what === 'niceLand' ? 1.1 : 1.35); buzz(20)
+      burst(p.x - 0.4, p.y + 1, air.what === 'niceLand' ? [0xffd23f, 0xffffff] : [0xff4f6d, 0xffd23f, 0x4fc3ff, 0x2ee6a6, 0xffffff], air.what === 'niceLand' ? 14 : 34, 4, 3)
+      if (air.what !== 'niceLand') shake(0.15)
+    }
+  }
 }
 function botInput() {
   input.gas = false; input.back = false
@@ -711,7 +751,7 @@ function cameraGoal() {
   if (cam === 'truck') return { x: p.x - 1, y: p.y + 1.4, d: fit(8.5, 9), lx: p.x - 1, ly: p.y + 0.9 }
   const ahead = clamp(v.x * 0.3, -1.2, 2.6) + 1.3
   const speedZoom = clamp(Math.hypot(v.x, v.y) / 9, 0, 1)
-  return { x: p.x + ahead, y: p.y + 2.3, d: fit(8.6 + speedZoom * 2.4, 11 + speedZoom * 2), lx: p.x + ahead, ly: p.y + 1.9 }
+  return { x: p.x + ahead, y: p.y + 1.7, d: fit(7.6 + speedZoom * 2.2, 9.5 + speedZoom * 2), lx: p.x + ahead, ly: p.y + 1.3 }
 }
 function snapCamera() { Object.assign(view, cameraGoal()); placeCamera(0) }
 function placeCamera(dt) {

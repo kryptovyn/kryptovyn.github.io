@@ -44,8 +44,8 @@ export const COURSES = [
   { theme: 'country', build: (b) => b.flat(4).obj('barrels', { at: 24, h: 5 }).slope(24, 5).flat(6).obj('tramp').flat(2.4).gap(4.5, 0).slope(10, -3.2).bumps(3).flat(4).finish() },
   { theme: 'mountain', build: (b) => b.obj('brokenBridge', { x: 12 }).flat(6).slope(12, 2.6).flat(3).lift(4.8, 4.6).flat(8).obj('wrecker', { dx: 2 }).flat(10).slope(16, -5).flat(5).finish() },
   { theme: 'snow', build: (b) => b.flat(5).ice(18, -4).flat(3).ramp(6, 1.1).gap(7, -0.8).slope(11, -3).obj('rocks').bumps(4, 2.2, 0.3).flat(5).finish() },
-  { theme: 'mountain', build: (b) => b.flat(5).collapse(16).flat(5).obj('windmill', { dx: 4 }).flat(10).hill(12, 2.2).obj('barrels', { at: 0, h: 0, back: true }).flat(4).finish() },
-  { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 1.95 }).bumps(4, 2.4, 0.44).flat(4).finish() },
+  { theme: 'mountain', build: (b) => b.flat(5).collapse(16).flat(5).obj('windmill', { dx: 4 }).flat(10).hill(11, 2.6).obj('barrels', { at: 0, h: 0, back: true }).flat(4).finish() },
+  { theme: 'city', build: (b) => b.flat(4).obj('fan', { L: 12, dir: -1 }).flat(13).obj('seesaw', { L: 8 }).flat(11).obj('seesaw', { L: 8 }).flat(11).stairs(5, 2.2, -0.4).flat(3).obj('tunnel', { L: 10, h: 1.95 }).bumps(4, 2.4, 0.5).flat(4).finish() },
   { theme: 'city', build: (b) => b.flat(4).slope(18, -4).flat(2).ramp(7, 2.1).gap(8, -2.4).obj('cars', { back: 8 }).flat(3).obj('boxes', { n: 10 }).flat(7).bumps(4).flat(3).obj('wrecker', { dx: 2 }).flat(10).finish().obj('wedding', { x: b.finishX + 9 }) },
 ]
 
@@ -159,10 +159,32 @@ export function buildCourse(world, index) {
     }
     return null
   }
-  // Scenery behind the road.
-  for (let x = -14; x < maxX; x += rnd(4, 8)) {
+  // Scenery behind the road: a near row, a meadow band with a far row on it, and fans by the road.
+  for (let x = -14; x < maxX; x += rnd(2.4, 4.6)) {
     const y = groundY(x); if (y === null) continue
     const d = decorPiece(pick(theme.decor), def.theme); d.position.set(x, y, rnd(-5.5, -3)); d.rotation.y = rnd(-0.3, 0.3); group.add(d)
+  }
+  const meadowY = (x) => { let n = 0, sum = 0; for (let k = -8; k <= 8; k += 2) { const y = groundY(x + k); if (y !== null) { sum += y; n++ } } return n ? sum / n : null }
+  const meadow = new THREE.Shape(), mx0 = -30, mx1 = maxX + 30, base = minY - 12
+  meadow.moveTo(mx0, base)
+  let lastY = groundY(-6) ?? 0
+  for (let x = mx0; x <= mx1; x += 2) { const y = meadowY(x); if (y !== null) lastY = y; meadow.lineTo(x, lastY + 0.6 + Math.sin(x * 0.15) * 0.5) }
+  meadow.lineTo(mx1, base)
+  const mcol = new THREE.Color(theme.top).lerp(new THREE.Color(theme.far), 0.45).getHex()
+  const mm = mesh(new THREE.ShapeGeometry(meadow), mcol); mm.position.z = -9; group.add(mm)
+  lastY = groundY(-6) ?? 0
+  for (let x = -24; x < maxX + 20; x += rnd(2.2, 4.2)) {
+    const y = meadowY(x); if (y !== null) lastY = y
+    const d = decorPiece(pick(theme.decor), def.theme); d.scale.setScalar(rnd(1.2, 1.6)); d.position.set(x, lastY + 0.4 + Math.sin(x * 0.15) * 0.5, rnd(-12, -9.5)); d.rotation.y = rnd(-0.4, 0.4); group.add(d)
+  }
+  const fans = []
+  for (let x = 4; x < maxX - 4; x += rnd(9, 15)) {
+    const y = groundY(x); if (y === null || groundY(x - 1) === null || groundY(x + 1) === null) continue
+    const kind = pick(['bear', 'dog', 'bunny', 'cat']), col = pick([0xffe0b0, 0xc98a55, 0xffffff, 0xffc0a0, 0xbfa0ff, 0x9a96a8])
+    const f = critter(kind, col, { shirt: pick([0xff4f6d, 0x4fc3ff, 0xffd23f, 0x2ee6a6, 0xff8fb1]) }); f.scale.setScalar(0.55)
+    f.position.set(x, y - 0.02, -2.6); f.rotation.y = rnd(-0.5, 0.5); group.add(f)
+    const flag = new THREE.Group(); flag.add(at(cyl(0.02, 0.02, 0.9, 0x8a5a3c, 4), 0, 0.45)); flag.add(at(box(0.36, 0.24, 0.02, pick([0xff4f6d, 0xffd23f, 0x4fc3ff])), 0.18, 0.78)); flag.position.set(0.45, 0.9, 0); f.add(flag)
+    fans.push({ g: f, flag, y: y - 0.02, t: rnd(0, 6) })
   }
   for (let x = -10; x < maxX; x += rnd(9, 16)) {
     const y = groundY(x); if (y === null) continue
@@ -173,6 +195,16 @@ export function buildCourse(world, index) {
 
   const course = { index, theme, themeName: def.theme, group, groundY, finishX: b.finishX, startX: -6, startY: groundY(-6), killY: minY - 5, objs: [], endX: maxX }
   for (const o of b.objs) { const made = makeObject(world, o, course); if (made) course.objs.push(made) }
+  // Fans hop and wave when the truck goes by.
+  if (fans.length) course.objs.push({ update(dt, ctx) {
+    const tx = ctx.truckX()
+    for (const f of fans) {
+      const near = Math.abs(f.g.position.x - tx) < 7
+      f.t += dt * (near ? 9 : 2)
+      f.g.position.y = f.y + (near ? Math.abs(Math.sin(f.t)) * 0.35 : 0)
+      f.flag.rotation.z = Math.sin(f.t * (near ? 1.3 : 0.6)) * (near ? 0.7 : 0.2)
+    }
+  } })
   return course
 }
 
