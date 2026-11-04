@@ -271,7 +271,10 @@ function loadCargo(drop = 0) {
   const xs = [-1.02, 0.26], stack = [BED.floor + 0.01, BED.floor + 0.01]
   rest.forEach((e, i) => {
     const side = i % 2
-    spawnItem(e, xs[side], stack[side] + drop)
+    // A new parcel drops into the bed from above at the start of the road.
+    const fresh = e.id === run.newCargo
+    const it = spawnItem(e, xs[side], stack[side] + drop + (fresh ? 3.2 : 0))
+    if (fresh) it.body.setAngularVelocity(rnd(-5, 5))
     stack[side] += KINDS[e.id].h + 0.03
   })
 }
@@ -402,8 +405,10 @@ function announceCargo() {
   if (!run.newCargo) return
   const it = live.find((i) => i.alive && i.entry.id === run.newCargo); run.newCargo = null
   if (!it) return
+  run.phaseT = Math.min(run.phaseT, -0.6) // wait for it to land before GO
   const p = it.body.getPosition()
-  setTimeout(() => { pop(t('newCargo'), it.entry.id, p.x, p.y + 1.2); audio.play('coin', 0.7, 1.4) }, 350)
+  pop(t('newCargo'), it.entry.id, p.x, p.y + 0.6); audio.play('coin', 0.7, 1.4)
+  setTimeout(() => { if (it.alive) { const q = it.body.getPosition(); audio.play('thud', 0.8, 1.1); shake(0.15); burst(q.x, q.y, [0xffffff, 0xfff1dc], 10, 2.5, 1.5) } }, 780)
 }
 function nextCourse() {
   const n = run.course + 1
