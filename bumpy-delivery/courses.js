@@ -24,7 +24,8 @@ class Builder {
   bumps(n, w = 2.2, h = 0.35) { for (let i = 0; i < n; i++) this.hill(w, h, 6); return this }
   ramp(L, h, n = 8) { const x0 = this.x, y0 = this.y; for (let i = 1; i <= n; i++) { const s = i / n; this.to(x0 + L * s, y0 + h * s * s) } return this }
   // A gap ends the ground; the far side starts with a wall face so a short jump hits it.
-  gap(L, dy = 0) { this.x += L; this.y += dy; this.cur = { pts: [[this.x, this.y - 8, true], [this.x, this.y]], ice: false }; this.chains.push(this.cur); return this }
+  // The landing edge is a slanted lip, so a jump that falls just short rolls up instead of snagging a wheel.
+  gap(L, dy = 0) { this.x += L; this.y += dy; this.cur = { pts: [[this.x - 1, this.y - 8, true], [this.x - 1, this.y - 1.3, true], [this.x - 0.35, this.y - 0.25, true], [this.x, this.y]], ice: false }; this.chains.push(this.cur); return this }
   stairs(n, w, dh) { for (let i = 0; i < n; i++) { this.to(this.x, this.y + dh); this.flat(w) } return this }
   ice(L, dy) { this.newChain(true); this.slope(L, dy); this.newChain(); return this }
   obj(kind, o = {}) { this.objs.push({ kind, x: this.x, y: this.y, ...o }); return this }
@@ -36,7 +37,7 @@ class Builder {
 
 // Each road is short (15-30 s) and mixes two or three obstacles.
 export const COURSES = [
-  { theme: 'town', build: (b) => b.obj('bakery', { x: -9 }).flat(4).slope(16, -3.2).flat(3).ramp(7, 1.6).gap(6.5, -0.6).slope(11, -2.4).flat(3).obj('boxes', { n: 6 }).flat(9).bumps(3).flat(5).finish() },
+  { theme: 'town', build: (b) => b.obj('bakery', { x: -9 }).flat(4).slope(16, -3.2).flat(3).ramp(7, 1.6).gap(5.5, -1).slope(11, -2).flat(3).obj('boxes', { n: 6 }).flat(9).bumps(3).flat(5).finish() },
   { theme: 'town', build: (b) => b.flat(4).bumps(5, 2.4, 0.38).flat(4).obj('seesaw', { L: 7 }).flat(9).hill(14, 2.6).flat(4).stairs(4, 2.4, -0.42).flat(5).finish() },
   { theme: 'town', build: (b) => b.flat(4).obj('tunnel', { L: 13, h: 2.1 }).bumps(5, 2.6, 0.32).flat(3).ramp(6, 1.3).gap(6, -0.6).flat(3).obj('boxes', { n: 10 }).flat(8).obj('fan', { L: 12, dir: -1 }).flat(13).finish() },
   { theme: 'country', build: (b) => b.flat(4).hill(16, 3).hill(12, 2).flat(4).rope(15).flat(5).hill(10, 1.4).flat(4).finish() },

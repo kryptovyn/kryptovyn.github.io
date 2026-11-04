@@ -336,7 +336,7 @@ function loadCourse(index, { story = false, at = null } = {}) {
   scene.background?.dispose?.(); scene.background = skyTexture(course.theme)
   const sx = at ?? course.startX
   makeTruck(sx, course.groundY(sx) + 0.85)
-  run.safeX = sx
+  run.safeX = sx; run.safeY = course.groundY(sx) + 0.85
   syncTruck()
   if (!story) loadCargo()
   run.flipT = 0; run.stuckT = 0
@@ -421,6 +421,24 @@ function oops(lostTier, why = 'oops') {
   banner(t(why))
   if (lostTier) loseTier(live.find((i) => i.tiers), true)
 }
+// In a pit: no ground under the truck and well below where it last stood.
+function inPit() {
+  const p = truck.chassis.getPosition()
+  if (p.y < course.killY) return true
+  if (course.groundY(p.x) !== null) return false
+  // Compare with the far side too, so a jump to a lower landing is not taken for a fall.
+  let ahead = null
+  for (let x = p.x; x < p.x + 16 && ahead === null; x += 0.5) ahead = course.groundY(x)
+  return p.y < Math.min(run.safeY - 0.85, ahead ?? Infinity) - 1.6
+}
+// Falling into a pit takes the whole truck down: the cake does not survive that.
+function fellInPit() {
+  const cake = run.items.find((e) => e.id === CAKE)
+  cake.alive = false; run.cakeTiers = 0
+  audio.play('smash', 0.9); buzz(120); shake(0.5)
+  sync()
+  fail('fell')
+}
 function loseTier(cake, quiet) {
   if (!cake || !cake.tiers?.length) return
   const top = cake.tiers.pop()
@@ -469,7 +487,7 @@ function itemColors(item) {
   return c.length ? c : [0xffffff]
 }
 function lose(item) {
-  if (item.tiers) { oops(true); return }
+  if (item.tiers) { if (inPit()) fellInPit(); else oops(true); return }
   item.entry.alive = false
   const p = item.body.getPosition()
   removeItem(item)
@@ -481,7 +499,7 @@ function fail(reason) {
   if (run.phase === 'fail' || run.phase === 'done') return
   run.phase = 'fail'; run.phaseT = 0; run.reason = reason
   audio.play('lose', 0.9); audio.engine(0, 50)
-  banner(reason === 'time' ? t('timeUp') : t('cakeGone'))
+  banner(reason === 'time' ? t('timeUp') : reason === 'fell' ? t('fell') : t('cakeGone'))
   setTimeout(() => {
     if (run.phase !== 'fail') return
     playStory([{ who: reason === 'time' ? 'bride' : 'chef', key: reason === 'time' ? 'f2' : 'f1', cam: 'truck' }], () => showResult(false))
@@ -647,8 +665,9 @@ function watchTruck(dt) {
   run.flipT = Math.abs(a) > 1.9 ? run.flipT + dt : 0
   const v = c.getLinearVelocity()
   run.stuckT = Math.hypot(v.x, v.y) < 0.25 && (input.gas || input.back) ? run.stuckT + dt : 0
-  if (run.flipT > 1.2 || p.y < course.killY || run.stuckT > 5) oops(false, run.flipT > 1.2 ? 'flipped' : p.y < course.killY ? 'fell' : 'stuck')
-  else if (Math.abs(a) < 0.5 && truck.wheels.every(touching) && course.groundY(p.x) !== null && Math.abs(course.groundY(p.x) - p.y) < 1.4) run.safeX = Math.max(run.safeX, p.x)
+  if (inPit()) { fellInPit(); return }
+  if (run.flipT > 1.2 || run.stuckT > 5) oops(false, run.flipT > 1.2 ? 'flipped' : 'stuck')
+  else if (Math.abs(a) < 0.5 && truck.wheels.every(touching) && course.groundY(p.x) !== null && Math.abs(course.groundY(p.x) - p.y) < 1.4) { if (p.x > run.safeX) { run.safeX = p.x; run.safeY = p.y } }
 }
 function botInput() {
   input.gas = false; input.back = false
