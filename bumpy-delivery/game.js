@@ -472,10 +472,20 @@ function oops(lostTier, why = 'oops') {
   if (lostTier) loseTier(live.find((i) => i.tiers), true)
 }
 // In a pit: no ground under the truck and well below where it last stood.
+function onStructure() {
+  for (const b of [...truck.wheels, truck.chassis]) for (let ce = b.getContactList(); ce; ce = ce.next) {
+    if (!ce.contact.isTouching()) continue
+    const u = ce.other.getUserData()
+    if (u?.prop) return true
+  }
+  return false
+}
 function inPit() {
   const p = truck.chassis.getPosition()
   if (p.y < course.killY) return true
   if (course.groundY(p.x) !== null) return false
+  // Standing on a bridge plank, a lift or a seesaw is not a fall, however low the bridge sags.
+  if (onStructure()) return false
   // Compare with the far side too, so a jump to a lower landing is not taken for a fall.
   let ahead = null
   for (let x = p.x; x < p.x + 16 && ahead === null; x += 0.5) ahead = course.groundY(x)
