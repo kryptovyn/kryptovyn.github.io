@@ -343,6 +343,7 @@ function loadCourse(index, { story = false, at = null } = {}) {
   if (!story) loadCargo()
   run.flipT = 0; run.stuckT = 0
   snapCamera()
+  sync()
 }
 function startRun() {
   const first = Q.has('c') ? clamp(+Q.get('c'), 0, COURSES.length - 1) : 0
