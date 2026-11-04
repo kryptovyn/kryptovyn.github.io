@@ -1,6 +1,6 @@
 :root { --ink: #2b1d3a; --sun: #ffd23f; --sun2: #ff9f1c; --cherry: #ff4f6d; --cherry2: #c22a48; --mint: #2ee6a6; --mint2: #18b37f; --paper: #fffaf2; --sky: #4fc3ff; --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px); }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: none; }
-html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #8fd8ff; color: var(--ink); font-family: "Arial Rounded MT Bold", "Baloo 2", "Nunito", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Microsoft YaHei", system-ui, sans-serif; font-weight: 800; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #8fd8ff; color: var(--ink); font-family: "Arial Rounded MT Bold", "Baloo 2", "Nunito", "Apple SD Gothic Neo", "Malgun Gothic", "Hiragino Sans", "Microsoft YaHei", system-ui, sans-serif; font-weight: 800; word-break: keep-all; overflow-wrap: anywhere; }
 canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .hide { display: none !important; }
 button { font: inherit; color: inherit; border: 0; cursor: pointer; }

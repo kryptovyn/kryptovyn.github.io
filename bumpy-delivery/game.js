@@ -17,7 +17,7 @@ const t = (key) => TEXT[lang][key] ?? TEXT.en[key] ?? key
 
 // ---------------------------------------------------------------- save
 const SAVE_KEY = 'bumpy_delivery'
-const save = { bestTime: 0, bestCourse: 0, runs: 0, clears: 0, music: 0.6, sfx: 0.9, shake: 1, lang: '', seenStory: 0 }
+const save = { bestTime: 0, bestCourse: 0, reach: 0, runs: 0, clears: 0, music: 0.6, sfx: 0.9, shake: 1, lang: '', seenStory: 0 }
 let saveTimer = 0
 function writeSave() {
   clearTimeout(saveTimer)
@@ -35,6 +35,8 @@ async function readSave() {
   } catch {}
   if (typeof text !== 'string' || !text) return
   try { Object.assign(save, JSON.parse(text)) } catch {}
+  // Old saves kept the number of roads finished; the farthest road reached is one more.
+  if (!save.reach && (save.bestCourse || save.runs)) save.reach = Math.min(COURSES.length, save.bestCourse + 1)
 }
 
 // ---------------------------------------------------------------- platform
@@ -390,7 +392,7 @@ function restartCourse(fromStart = false) {
 function nextCourse() {
   const n = run.course + 1
   run.lastCourse = n
-  save.bestCourse = Math.max(save.bestCourse, n); writeSave()
+  if (!Q.has('c')) { save.reach = Math.max(save.reach, n + 1); writeSave() }
   if (n === 5 && (!save.seenMid || Q.has('story'))) {
     loadCourse(5)
     run.phase = 'story'
@@ -536,14 +538,14 @@ function showResult(won) {
   let fresh = false
   // A run started from a later road (?c= test link) never counts as a record.
   if (won && !Q.has('c')) { save.clears++; if (!save.bestTime || run.time < save.bestTime) { save.bestTime = run.time; fresh = true } }
-  save.bestCourse = Math.max(save.bestCourse, won ? COURSES.length : run.course)
+  if (!Q.has('c')) save.reach = Math.max(save.reach, won ? COURSES.length : run.course + 1)
   writeSave()
   hide('hud'); hide('story'); show('result')
   $('resTitle').textContent = won ? t('clearAll') : run.reason === 'time' ? t('timeUp') : t('cakeGone')
   $('resCake').innerHTML = `<img src="${cakeThumb(won ? run.cakeTiers : 0)}" alt="">`
   $('resItems').innerHTML = run.items.filter((e) => e.id !== CAKE).map((e) => `<span class="${e.alive ? '' : 'gone'}"><img src="${thumbs[e.id]}" alt=""></span>`).join('')
   $('resTimeL').textContent = won ? t('time') : t('course'); $('resTime').textContent = won ? fmt(run.time) : `${run.course + 1} / ${COURSES.length}`
-  $('resBestL').textContent = save.bestTime ? t('best') : t('farthest'); $('resBest').textContent = save.bestTime ? fmt(save.bestTime) : `${save.bestCourse} / ${COURSES.length}`
+  $('resBestL').textContent = save.bestTime ? t('best') : t('farthest'); $('resBest').textContent = save.bestTime ? fmt(save.bestTime) : `${save.reach} / ${COURSES.length}`
   $('resNew').textContent = t('newBest'); $('resNew').classList.toggle('hide', !fresh)
   const canCont = !won && !run.continued
   $('contBtn').classList.toggle('hide', !canCont)
@@ -724,7 +726,7 @@ function placeCamera(dt) {
 function sync() {
   $('playBtn').textContent = t('play')
   $('tagline').textContent = t('tagline')
-  $('bestBox').textContent = save.bestTime ? `${t('best')} ${fmt(save.bestTime)}` : save.bestCourse ? `${t('farthest')} ${save.bestCourse} / ${COURSES.length}` : ''
+  $('bestBox').textContent = save.bestTime ? `${t('best')} ${fmt(save.bestTime)}` : save.reach ? `${t('farthest')} ${save.reach} / ${COURSES.length}` : ''
   $('pauseTitle').textContent = t('paused'); $('resumeBtn').textContent = t('resume'); $('quitBtn').textContent = t('quit')
   $('panelClose').textContent = t('close')
   if (game.state !== 'play') return
