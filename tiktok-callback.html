@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KRYPTOVYN - TikTok sign-in</title>
+<style>body{margin:0;background:#15102b;color:#eee;font:16px/1.6 system-ui,sans-serif}main{max-width:640px;margin:0 auto;padding:40px 16px}h1{color:#ffd23f}</style></head>
+<body><main><h1>TikTok sign-in</h1><p id="m">Returning to the KRYPTOVYN Video Poster on this computer...</p></main>
+<script>
+// TikTok sends the sign-in code here; hand it to the uploader running on this same computer (port 8765).
+var q = location.search
+if (/[?&]code=/.test(q) || /[?&]error=/.test(q)) location.replace('http://127.0.0.1:8765/callback' + q)
+else document.getElementById('m').textContent = 'Nothing to do here.'
+</script></body></html>
