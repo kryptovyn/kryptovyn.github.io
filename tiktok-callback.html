@@ -4,6 +4,7 @@
 <script>
 // TikTok sends the sign-in code here; hand it to the uploader running on this same computer (port 8765).
 var q = location.search
-if (/[?&]code=/.test(q) || /[?&]error=/.test(q)) location.replace('http://127.0.0.1:8765/callback' + q)
+if (/[?&]state=web-/.test(q)) location.replace('/poster.html' + q) // signed in from the web poster page
+  else if (/[?&]code=/.test(q) || /[?&]error=/.test(q)) location.replace('http://127.0.0.1:8765/callback' + q)
 else document.getElementById('m').textContent = 'Nothing to do here.'
 </script></body></html>
