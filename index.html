@@ -22,18 +22,18 @@ header{position:sticky;top:0;z-index:10;display:flex;min-width:0;align-items:cen
 .lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .lang button{all:unset;cursor:pointer;padding:6px 12px;font-size:13px;font-weight:700;color:var(--dim)}
 .lang button.on{background:var(--sun);color:#24183f}
-.yt{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:#ff2d2d;font-weight:900;font-size:13px}
+.soc{display:flex;gap:8px}.soc a{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-weight:900;font-size:13px;color:#fff}.soc .yt{background:#ff2d2d}.soc .ig{background:linear-gradient(45deg,#f9a825,#e91e63,#7b1fa2)}.soc .tt{background:#111;box-shadow:inset 0 0 0 1px #444}.soc svg{width:15px;height:15px;fill:#fff}
 main{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .hero{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:16/7;min-height:230px;background:#000;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .slide{position:absolute;inset:0;opacity:0;transition:opacity .7s;display:block}
-.slide.on{opacity:1}
+.slide.on{opacity:1;z-index:1}.slide .txt{opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}.slide.on .txt{opacity:1;transform:none;transition-delay:.35s}
 .slide img{width:100%;height:100%;object-fit:cover;object-position:70% center}
 .slide .shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,5,25,.96) 0,rgba(10,5,25,.9) 40%,rgba(10,5,25,.35) 62%,transparent 82%)}
 .slide .txt{position:absolute;left:5%;bottom:12%;max-width:46%}
 .tag{display:inline-block;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:900;letter-spacing:.5px;color:#14092b}
 .tag.new{background:var(--new)}.tag.up{background:var(--up)}.tag.hot{background:var(--hot);color:#fff}
-.slide h2{margin:10px 0 6px;font-family:"Black Han Sans",sans-serif;font-size:clamp(28px,4.6vw,54px);line-height:1.05;text-shadow:0 4px 0 rgba(0,0,0,.5)}
-.slide p{margin:0 0 16px;font-size:clamp(13px,1.5vw,17px);color:#e9e1ff}
+.slide h2{margin:10px 0 8px;font-weight:800;font-size:clamp(24px,3.6vw,42px);line-height:1.2;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.slide p{margin:0 0 16px;font-size:clamp(13px,1.4vw,16px);font-weight:500;color:#e9e1ff;line-height:1.5}
 .play{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;background:var(--sun);color:#24183f;font-weight:900;font-size:16px;box-shadow:0 5px 0 #b8860b;transition:transform .12s}
 .play:hover{transform:translateY(-2px)}
 .dots{position:absolute;right:18px;bottom:16px;display:flex;gap:8px}
@@ -62,7 +62,7 @@ footer{border-top:1px solid var(--line);padding:22px 20px 30px;text-align:center
 footer a{margin:0 8px;color:var(--ink)}
 @media (max-width:640px){header{padding:10px 16px}.logo{font-size:22px}.logo small{display:none}main{padding:14px 16px 30px}
  .hero{aspect-ratio:4/5}.slide .shade{background:linear-gradient(0deg,rgba(10,5,25,.95) 0,rgba(10,5,25,.5) 50%,transparent 75%)}
- .slide .txt{left:6%;right:6%;bottom:9%;max-width:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.info p{display:none}.yt span{display:none}}
+ .slide .txt{left:6%;right:6%;bottom:9%;max-width:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.info p{display:none}.soc span{display:none}.soc a{padding:7px 9px}.lang button.on{display:none}.lang button{padding:6px 10px}}
 </style>
 </head>
 <body>
@@ -70,7 +70,7 @@ footer a{margin:0 8px;color:var(--ink)}
   <a class="logo" href="#">KRYPTOVYN<small>GAMES</small></a>
   <div class="sp"></div>
   <div class="lang"><button data-l="ko">한국어</button><button data-l="en">EN</button></div>
-  <a class="yt" href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">▶ <span>YouTube</span></a>
+  <div class="soc"><a class="yt" href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">▶ <span>YouTube</span></a><a class="ig" href="https://www.instagram.com/kryptovyn/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2A3.2 3.2 0 1 1 12 8.8a3.2 3.2 0 0 1 0 6.4zM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zM12 2c-2.7 0-3 0-4.1.1C3.6 2.3 2.3 3.6 2.1 7.9 2 9 2 9.3 2 12s0 3 .1 4.1c.2 4.3 1.5 5.6 5.8 5.8C9 22 9.3 22 12 22s3 0 4.1-.1c4.3-.2 5.6-1.5 5.8-5.8.1-1.1.1-1.4.1-4.1s0-3-.1-4.1c-.2-4.3-1.5-5.6-5.8-5.8C15 2 14.7 2 12 2z"/></svg><span>Instagram</span></a><a class="tt" href="https://www.tiktok.com/@kryptovyn" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M16.5 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.6 7.6 0 0 0 4.5 1.5V6.8a4.4 4.4 0 0 1-4.5-4.8z"/></svg><span>TikTok</span></a></div>
 </header>
 <main>
   <section class="hero" id="hero"></section>
@@ -79,7 +79,7 @@ footer a{margin:0 8px;color:var(--ink)}
 </main>
 <footer>
   <div data-t="foot">설치 없이 PC · 폰 브라우저에서 바로, 무료로 즐기세요.</div>
-  <div style="margin-top:10px"><a href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">YouTube</a>·<a href="/privacy.html">Privacy</a>·<a href="/terms.html">Terms</a></div>
+  <div style="margin-top:10px"><a href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">YouTube</a>·<a href="https://www.instagram.com/kryptovyn/" target="_blank" rel="noopener">Instagram</a>·<a href="https://www.tiktok.com/@kryptovyn" target="_blank" rel="noopener">TikTok</a>·<a href="/privacy.html">Privacy</a>·<a href="/terms.html">Terms</a></div>
   <div style="margin-top:10px">© KRYPTOVYN</div>
 </footer>
 <script>
