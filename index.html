@@ -1,10 +1,142 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KRYPTOVYN Games</title><link rel="icon" href="data:,">
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KRYPTOVYN Games · 브라우저에서 바로, 무료</title>
+<meta name="description" content="KRYPTOVYN이 만든 웹 게임 모음. 설치 없이 PC · 폰 브라우저에서 바로, 무료로.">
+<meta property="og:title" content="KRYPTOVYN Games">
+<meta property="og:description" content="설치 없이 브라우저에서 바로 하는 무료 게임 11개">
+<meta property="og:image" content="https://kryptovyn.github.io/img/claw_hero.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#24183f;--sun:#ffd23f}*{box-sizing:border-box}body{margin:0;background:linear-gradient(#7b4dff,#3a1f9e);min-height:100vh;font-family:system-ui,"Malgun Gothic",sans-serif;color:#fff}
-h1{margin:0;padding:28px 16px 6px;text-align:center;font-size:34px;color:var(--sun);-webkit-text-stroke:5px var(--ink);paint-order:stroke fill}
-p{margin:0 0 18px;text-align:center;font-size:15px;opacity:.9}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;max-width:820px;margin:0 auto;padding:0 16px 32px}
-.card{display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:18px;background:#fff8e7;color:var(--ink);text-decoration:none;box-shadow:0 0 0 3px var(--ink),0 6px 0 var(--ink)}
-.card img{width:100%;height:auto;border-radius:12px;display:block}.card b{font-size:16px}.card span{font-size:13px;color:#5a4d78}
-</style></head><body><h1>KRYPTOVYN</h1><p>브라우저에서 바로, 무료 · Play free in your browser</p><div class="grid"><a class="card" href="https://playgama.ai/play/ny4y672bgn55pk"><img src="claw.webp" alt="Claw Pop" width="360" height="360"><b>Claw Pop</b><span>새벽 3시 뽑기방에서 탈출하기</span></a><a class="card" href="https://playgama.ai/play/6ucj7qs4r2pgpw"><img src="squeeze.webp" alt="Squeeze Lift" width="360" height="360"><b>Squeeze Lift</b><span>문 닫히기 전에 엘리베이터 꽉 채우기</span></a><a class="card" href="https://playgama.ai/play/kna2vvtacb5og5"><img src="sky.webp" alt="Skyfall Squad" width="360" height="360"><b>Skyfall Squad</b><span>영웅 여섯으로 하늘 다섯 곳 돌파</span></a><a class="card" href="https://playgama.ai/play/kkguhmxusq3gz5"><img src="melt.webp" alt="AI Invasion: Melt the World" width="360" height="360"><b>AI Invasion: Melt the World</b><span>레이저로 세계 도시 11곳을 녹이기</span></a><a class="card" href="https://playgama.ai/play/2wv7rvomm4jnra"><img src="bumpy.webp" alt="Bumpy Delivery" width="360" height="360"><b>Bumpy Delivery</b><span>흔들리는 트럭으로 결혼식 케이크 배달</span></a><a class="card" href="https://playgama.ai/play/33snqmhvxssrfx"><img src="swarm.webp" alt="Hero Swarm" width="360" height="360"><b>Hero Swarm</b><span>문을 골라 영웅 군단 키우기</span></a><a class="card" href="https://playgama.ai/play/rp5hg7v2xbxrec"><img src="gulp.webp" alt="Gulp Town" width="360" height="360"><b>Gulp Town</b><span>구멍이 되어 마을을 삼키기</span></a><a class="card" href="https://playgama.ai/play/d7iuylpphlv6wb"><img src="mythic.webp" alt="Mythic Drop" width="360" height="360"><b>Mythic Drop</b><span>디아블로식 장비를 줍는 서바이벌</span></a><a class="card" href="https://playgama.ai/play/zfcdzajva7jixb"><img src="random.webp" alt="Random Defense" width="360" height="360"><b>Random Defense</b><span>뽑고 합쳐서 60웨이브 버티기</span></a><a class="card" href="https://playgama.ai/play/lw3zpk6rowh5en"><img src="tower.webp" alt="Weird Tower Defense" width="360" height="360"><b>Weird Tower Defense</b><span>뻥튀기 · 청소기로 막는 디펜스</span></a><a class="card" href="https://playgama.ai/play/7g3k2mruqqvpy7"><img src="detective.webp" alt="Yes No Detective" width="360" height="360"><b>Yes No Detective</b><span>예 · 아니오로 범인 찾기</span></a></div></body></html>
+:root{--bg:#120b26;--bg2:#1c1240;--card:#241a4d;--line:#3a2d70;--ink:#f4efff;--dim:#b8acdf;--sun:#ffd23f;--hot:#ff4f8b;--new:#2ee6a6;--up:#4fc3ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;overflow-x:hidden;word-break:keep-all;background:radial-gradient(1200px 600px at 70% -10%,#3b1f8f 0,transparent 60%),var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;min-height:100vh}
+a{color:inherit;text-decoration:none}
+header{position:sticky;top:0;z-index:10;display:flex;min-width:0;align-items:center;gap:14px;padding:12px 20px;background:rgba(18,11,38,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.logo{font-family:"Black Han Sans",sans-serif;font-size:26px;letter-spacing:1px;color:var(--sun);text-shadow:0 3px 0 #5b2bd1}
+.logo small{font-family:"Noto Sans KR";font-size:12px;font-weight:700;color:var(--dim);margin-left:6px;letter-spacing:0}
+.sp{flex:1}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{all:unset;cursor:pointer;padding:6px 12px;font-size:13px;font-weight:700;color:var(--dim)}
+.lang button.on{background:var(--sun);color:#24183f}
+.yt{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:#ff2d2d;font-weight:900;font-size:13px}
+main{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
+.hero{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:16/7;min-height:230px;background:#000;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.slide{position:absolute;inset:0;opacity:0;transition:opacity .7s;display:block}
+.slide.on{opacity:1}
+.slide img{width:100%;height:100%;object-fit:cover;object-position:70% center}
+.slide .shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,5,25,.96) 0,rgba(10,5,25,.9) 40%,rgba(10,5,25,.35) 62%,transparent 82%)}
+.slide .txt{position:absolute;left:5%;bottom:12%;max-width:46%}
+.tag{display:inline-block;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:900;letter-spacing:.5px;color:#14092b}
+.tag.new{background:var(--new)}.tag.up{background:var(--up)}.tag.hot{background:var(--hot);color:#fff}
+.slide h2{margin:10px 0 6px;font-family:"Black Han Sans",sans-serif;font-size:clamp(28px,4.6vw,54px);line-height:1.05;text-shadow:0 4px 0 rgba(0,0,0,.5)}
+.slide p{margin:0 0 16px;font-size:clamp(13px,1.5vw,17px);color:#e9e1ff}
+.play{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;background:var(--sun);color:#24183f;font-weight:900;font-size:16px;box-shadow:0 5px 0 #b8860b;transition:transform .12s}
+.play:hover{transform:translateY(-2px)}
+.dots{position:absolute;right:18px;bottom:16px;display:flex;gap:8px}
+.dots button{all:unset;cursor:pointer;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4)}
+.dots button.on{background:var(--sun);width:26px;border-radius:6px}
+.bar{display:flex;align-items:center;gap:10px;margin:28px 0 14px;flex-wrap:wrap}
+.bar h3{margin:0 8px 0 0;font-size:20px;font-weight:900}
+.chip{all:unset;cursor:pointer;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);font-size:13px;font-weight:700;color:var(--dim)}
+.chip.on{background:var(--ink);color:#1c1240;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}.card,.info{min-width:0}.info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card{position:relative;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(0,0,0,.4),0 0 0 2px var(--sun)}
+.thumb{position:relative;aspect-ratio:16/9;overflow:hidden;background:#000}
+.thumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.card:hover .thumb img{transform:scale(1.06)}
+.thumb .tag{position:absolute;left:10px;top:10px}
+.thumb .go{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,5,25,.45);opacity:0;transition:opacity .15s}
+.card:hover .go{opacity:1}
+.go span{padding:10px 20px;border-radius:12px;background:var(--sun);color:#24183f;font-weight:900}
+.info{padding:12px 14px 14px}
+.info b{display:block;font-size:16px;font-weight:900}
+.info p{margin:4px 0 8px;font-size:13px;color:var(--dim);line-height:1.4}
+.genre{font-size:11px;font-weight:700;color:var(--sun);letter-spacing:.3px}
+.dev{font-size:11px;color:var(--dim);float:right}
+footer{border-top:1px solid var(--line);padding:22px 20px 30px;text-align:center;color:var(--dim);font-size:13px}
+footer a{margin:0 8px;color:var(--ink)}
+@media (max-width:640px){header{padding:10px 16px}.logo{font-size:22px}.logo small{display:none}main{padding:14px 16px 30px}
+ .hero{aspect-ratio:4/5}.slide .shade{background:linear-gradient(0deg,rgba(10,5,25,.95) 0,rgba(10,5,25,.5) 50%,transparent 75%)}
+ .slide .txt{left:6%;right:6%;bottom:9%;max-width:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.info p{display:none}.yt span{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="#">KRYPTOVYN<small>GAMES</small></a>
+  <div class="sp"></div>
+  <div class="lang"><button data-l="ko">한국어</button><button data-l="en">EN</button></div>
+  <a class="yt" href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">▶ <span>YouTube</span></a>
+</header>
+<main>
+  <section class="hero" id="hero"></section>
+  <div class="bar"><h3 data-t="all">모든 게임</h3><div id="chips" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+  <section class="grid" id="grid"></section>
+</main>
+<footer>
+  <div data-t="foot">설치 없이 PC · 폰 브라우저에서 바로, 무료로 즐기세요.</div>
+  <div style="margin-top:10px"><a href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">YouTube</a>·<a href="/privacy.html">Privacy</a>·<a href="/terms.html">Terms</a></div>
+  <div style="margin-top:10px">© KRYPTOVYN</div>
+</footer>
+<script>
+const G = [
+  { id: 'claw', url: 'ny4y672bgn55pk', name: 'Claw Pop', tag: 'new', g: 'arcade', hero: 1,
+    ko: ['새벽 3시, 뽑기방에 갇혔다', '동트기 전에 열쇠 인형을 뽑아 문 6개를 열어라. 정전 · 경비 · 저주받은 인형.'],
+    en: ['Locked in a claw shop at 3 AM', 'Grab the key plush and open 6 doors before dawn. Blackouts, a guard, cursed plush.'] },
+  { id: 'gulp', url: 'rp5hg7v2xbxrec', name: 'Gulp Town', tag: 'up', g: 'smash', hero: 1,
+    ko: ['구멍 하나로 마을을 통째로', '작은 구멍이 커지며 장난감 방 · 해저 마을 · 공룡 정글까지 10곳을 삼킨다.'],
+    en: ['Swallow the whole town', 'A tiny hole grows until it eats 10 towns: toy room, undersea, dino jungle and more.'] },
+  { id: 'squeeze', url: '6ucj7qs4r2pgpw', name: 'Squeeze Lift', tag: 'new', g: 'puzzle', hero: 1,
+    ko: ['문 닫히기 전에 다 태워', '스모 선수도 피아노도 소도, 엘리베이터에 꽉꽉 밀어 넣기.'],
+    en: ['Cram them in before the doors close', 'Sumo wrestlers, pianos, cows: squeeze everyone into the lift.'] },
+  { id: 'melt', url: 'kkguhmxusq3gz5', name: 'AI Invasion', tag: 'hot', g: 'smash', hero: 1,
+    ko: ['레이저로 세계 도시를 녹여라', '벤치 하나 녹이던 레이저가 에펠탑 · 도쿄타워까지. 도시 11곳.'],
+    en: ['Melt the world with a laser', 'From a park bench to the Eiffel Tower: 11 cities to melt.'] },
+  { id: 'sky', url: 'kna2vvtacb5og5', name: 'Skyfall Squad', tag: '', g: 'shooter',
+    ko: ['영웅 여섯, 하늘 다섯 곳', '손가락 하나로 날며 쏘는 세로 슈팅. 보스 앞에서 지원군 호출.'], en: ['Six heroes, five skies', 'A vertical shooter you fly with one finger. Call backup at the boss.'] },
+  { id: 'bumpy', url: '2wv7rvomm4jnra', name: 'Bumpy Delivery', tag: '', g: 'arcade',
+    ko: ['결혼식 5분 전, 케이크 배달', '흔들리는 트럭으로 3단 케이크를 지켜라. 길 10개.'], en: ['Wedding in 5 minutes', 'Keep a 3-tier cake on a wobbly truck across 10 roads.'] },
+  { id: 'mythic', url: 'd7iuylpphlv6wb', name: 'Mythic Drop', tag: '', g: 'action',
+    ko: ['몹으로 꽉 찬 화면, 디아블로식 장비', '무기 21개 · 세트 장비 · 각성. 화면이 전부 터진다.'], en: ['Screens full of monsters, Diablo-style loot', '21 weapons, set items, awakenings.'] },
+  { id: 'swarm', url: '33snqmhvxssrfx', name: 'Hero Swarm', tag: '', g: 'action',
+    ko: ['문을 골라 영웅 군단 키우기', '좋은 문을 고르면 군단이 불어난다.'], en: ['Pick the gates, grow the swarm', 'Choose the right gates and your army explodes.'] },
+  { id: 'random', url: 'zfcdzajva7jixb', name: 'Random Defense', tag: '', g: 'defense',
+    ko: ['뽑고 합쳐서 60웨이브', '같은 유닛 둘을 합치면 더 세진다.'], en: ['Draw, merge, survive 60 waves', 'Merge two of a kind to power up.'] },
+  { id: 'tower', url: 'lw3zpk6rowh5en', name: 'Weird Tower Defense', tag: '', g: 'defense',
+    ko: ['뻥튀기 · 청소기로 막는 디펜스', '이상한 탑으로 슬라임 떼를 막아라.'], en: ['Defend with popcorn and vacuums', 'Hold back slimes with the weirdest towers.'] },
+  { id: 'detective', url: '7g3k2mruqqvpy7', name: 'Yes No Detective', tag: '', g: 'puzzle',
+    ko: ['예 · 아니오로 범인 찾기', '질문만으로 사건을 푸는 짧은 추리.'], en: ['Catch the culprit with yes or no', 'Short mysteries solved by questions only.'] },
+]
+const GENRES = { all: ['전체', 'All'], smash: ['3D 부수기', 'Smash'], arcade: ['아케이드', 'Arcade'], puzzle: ['퍼즐', 'Puzzle'], shooter: ['슈팅', 'Shooter'], action: ['액션', 'Action'], defense: ['디펜스', 'Defense'] }
+const TAGS = { new: 'NEW', up: 'UPDATE', hot: 'HOT' }
+const T = { all: ['모든 게임', 'All games'], foot: ['설치 없이 PC · 폰 브라우저에서 바로, 무료로 즐기세요.', 'No install. Play free in your PC or phone browser.'], play: ['지금 플레이', 'Play now'] }
+let lang = 'ko', genre = 'all', slide = 0, timer
+try { lang = localStorage.getItem('kv_lang') || (navigator.language.startsWith('ko') ? 'ko' : 'en') } catch { lang = navigator.language.startsWith('ko') ? 'ko' : 'en' }
+const L = (pair) => pair[lang === 'ko' ? 0 : 1]
+const href = (g) => `https://playgama.ai/play/${g.url}`
+function render() {
+  document.documentElement.lang = lang
+  document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === lang))
+  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = L(T[e.dataset.t]) })
+  const heroes = G.filter((g) => g.hero)
+  document.getElementById('hero').innerHTML = heroes.map((g, i) => `<a class="slide${i === slide ? ' on' : ''}" href="${href(g)}" target="_blank" rel="noopener">
+    <img src="img/${g.id}_hero.webp" alt="${g.name}" ${i ? 'loading="lazy"' : ''}><div class="shade"></div>
+    <div class="txt">${g.tag ? `<span class="tag ${g.tag}">${TAGS[g.tag]}</span>` : ''}<h2>${g[lang][0]}</h2><p>${g.name} · ${g[lang][1]}</p><span class="play">▶ ${L(T.play)}</span></div></a>`).join('')
+    + `<div class="dots">${heroes.map((_, i) => `<button aria-label="${i + 1}" class="${i === slide ? 'on' : ''}" data-i="${i}"></button>`).join('')}</div>`
+  document.querySelectorAll('.dots button').forEach((b) => b.onclick = (e) => { e.preventDefault(); slide = +b.dataset.i; render(); restart() })
+  document.getElementById('chips').innerHTML = Object.keys(GENRES).map((k) => `<button class="chip${k === genre ? ' on' : ''}" data-g="${k}">${L(GENRES[k])}</button>`).join('')
+  document.querySelectorAll('.chip').forEach((b) => b.onclick = () => { genre = b.dataset.g; render() })
+  document.getElementById('grid').innerHTML = G.filter((g) => genre === 'all' || g.g === genre).map((g) => `<a class="card" href="${href(g)}" target="_blank" rel="noopener">
+    <div class="thumb"><img src="img/${g.id}.webp" alt="${g.name}" loading="lazy" width="640" height="360">${g.tag ? `<span class="tag ${g.tag}">${TAGS[g.tag]}</span>` : ''}<div class="go"><span>▶ ${L(T.play)}</span></div></div>
+    <div class="info"><b>${g.name}</b><p>${g[lang][0]}</p><span class="genre">${L(GENRES[g.g])}</span><span class="dev">PC · Mobile</span></div></a>`).join('')
+}
+function restart() { clearInterval(timer); timer = setInterval(() => { slide = (slide + 1) % G.filter((g) => g.hero).length; document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('on', i === slide)); document.querySelectorAll('.dots button').forEach((b, i) => b.classList.toggle('on', i === slide)) }, 5000) }
+document.querySelectorAll('.lang button').forEach((b) => b.onclick = () => { lang = b.dataset.l; try { localStorage.setItem('kv_lang', lang) } catch {} render() })
+render(); restart()
+</script>
+</body>
+</html>
