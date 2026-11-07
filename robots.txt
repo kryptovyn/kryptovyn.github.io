@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /poster.html
+Disallow: /tiktok-callback.html
+Disallow: /bumpy-delivery/
+Disallow: /claw-pop/
+Disallow: /melt-bot/
+Sitemap: https://kryptovyn.github.io/sitemap.xml
