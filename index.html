@@ -12,16 +12,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#120b26;--bg2:#1c1240;--card:#241a4d;--line:#3a2d70;--ink:#f4efff;--dim:#b8acdf;--sun:#ffd23f;--hot:#ff4f8b;--new:#2ee6a6;--up:#4fc3ff}
-*{box-sizing:border-box}html{scroll-behavior:smooth}
+*{box-sizing:border-box}html:lang(ja) body,html:lang(zh) body{word-break:normal;line-break:strict;overflow-wrap:anywhere}html{scroll-behavior:smooth}
 body{margin:0;overflow-x:hidden;word-break:keep-all;background:radial-gradient(1200px 600px at 70% -10%,#3b1f8f 0,transparent 60%),var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;min-height:100vh}
 a{color:inherit;text-decoration:none}
 header{position:sticky;top:0;z-index:10;display:flex;min-width:0;align-items:center;gap:14px;padding:12px 20px;background:rgba(18,11,38,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .logo{font-family:"Black Han Sans",sans-serif;font-size:26px;letter-spacing:1px;color:var(--sun);text-shadow:0 3px 0 #5b2bd1}
 .logo small{font-family:"Noto Sans KR";font-size:12px;font-weight:700;color:var(--dim);margin-left:6px;letter-spacing:0}
 .sp{flex:1}
-.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-.lang button{all:unset;cursor:pointer;padding:6px 12px;font-size:13px;font-weight:700;color:var(--dim)}
-.lang button.on{background:var(--sun);color:#24183f}
+.lang{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;color:var(--ink)}.lang:hover{border-color:var(--sun)}#pop{position:fixed;inset:0;z-index:50;display:none;place-items:center;background:rgba(6,3,15,.6);backdrop-filter:blur(4px)}#pop.on{display:grid}.popbox{width:min(92vw,520px);padding:20px;border-radius:20px;background:var(--bg2);border:1px solid var(--line);box-shadow:0 20px 60px rgba(0,0,0,.6)}.popbox h4{margin:0 0 14px;font-size:18px}.langs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.langs button{all:unset;cursor:pointer;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:700;text-align:center}.langs button.on{background:var(--sun);color:#24183f;border-color:var(--sun)}.langs button:hover{border-color:var(--sun)}
 .soc{display:flex;gap:8px}.soc a{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-weight:900;font-size:13px;color:#fff}.soc .yt{background:#ff2d2d}.soc .ig{background:linear-gradient(45deg,#f9a825,#e91e63,#7b1fa2)}.soc .tt{background:#111;box-shadow:inset 0 0 0 1px #444}.soc svg{width:15px;height:15px;fill:#fff}
 main{max-width:1180px;margin:0 auto;padding:18px 20px 40px}
 .hero{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:16/7;min-height:230px;background:#000;box-shadow:0 18px 50px rgba(0,0,0,.45)}
@@ -62,14 +60,14 @@ footer{border-top:1px solid var(--line);padding:22px 20px 30px;text-align:center
 footer a{margin:0 8px;color:var(--ink)}
 @media (max-width:640px){header{padding:10px 16px}.logo{font-size:22px}.logo small{display:none}main{padding:14px 16px 30px}
  .hero{aspect-ratio:4/5}.slide .shade{background:linear-gradient(0deg,rgba(10,5,25,.95) 0,rgba(10,5,25,.5) 50%,transparent 75%)}
- .slide .txt{left:6%;right:6%;bottom:9%;max-width:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.info p{display:none}.soc span{display:none}.soc a{padding:7px 9px}.lang button.on{display:none}.lang button{padding:6px 10px}}
+ .slide .txt{left:6%;right:6%;bottom:9%;max-width:none}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.info p{display:none}.soc span{display:none}.soc a{padding:7px 9px}#langName{display:none}.lang{padding:7px 10px}}
 </style>
 </head>
 <body>
 <header>
-  <a class="logo" href="#">KRYPTOVYN<small>GAMES</small></a>
+  <a class="logo" href="/">KRYPTOVYN<small>GAMES</small></a>
   <div class="sp"></div>
-  <div class="lang"><button data-l="ko">한국어</button><button data-l="en">EN</button></div>
+  <button class="lang" id="langBtn" aria-haspopup="dialog">🌐 <span id="langName"></span></button>
   <div class="soc"><a class="yt" href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">▶ <span>YouTube</span></a><a class="ig" href="https://www.instagram.com/kryptovyn/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2A3.2 3.2 0 1 1 12 8.8a3.2 3.2 0 0 1 0 6.4zM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4zM12 2c-2.7 0-3 0-4.1.1C3.6 2.3 2.3 3.6 2.1 7.9 2 9 2 9.3 2 12s0 3 .1 4.1c.2 4.3 1.5 5.6 5.8 5.8C9 22 9.3 22 12 22s3 0 4.1-.1c4.3-.2 5.6-1.5 5.8-5.8.1-1.1.1-1.4.1-4.1s0-3-.1-4.1c-.2-4.3-1.5-5.6-5.8-5.8C15 2 14.7 2 12 2z"/></svg><span>Instagram</span></a><a class="tt" href="https://www.tiktok.com/@kryptovyn" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M16.5 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.6 7.6 0 0 0 4.5 1.5V6.8a4.4 4.4 0 0 1-4.5-4.8z"/></svg><span>TikTok</span></a></div>
 </header>
 <main>
@@ -77,6 +75,7 @@ footer a{margin:0 8px;color:var(--ink)}
   <div class="bar"><h3 data-t="all">모든 게임</h3><div id="chips" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
   <section class="grid" id="grid"></section>
 </main>
+<div id="pop" role="dialog" aria-modal="true"><div class="popbox"><h4 id="popTitle"></h4><div class="langs" id="langs"></div></div></div>
 <footer>
   <div data-t="foot">설치 없이 PC · 폰 브라우저에서 바로, 무료로 즐기세요.</div>
   <div style="margin-top:10px"><a href="https://www.youtube.com/@KRYPTOVYN" target="_blank" rel="noopener">YouTube</a>·<a href="https://www.instagram.com/kryptovyn/" target="_blank" rel="noopener">Instagram</a>·<a href="https://www.tiktok.com/@kryptovyn" target="_blank" rel="noopener">TikTok</a>·<a href="/privacy.html">Privacy</a>·<a href="/terms.html">Terms</a></div>
@@ -111,31 +110,65 @@ const G = [
   { id: 'detective', url: '7g3k2mruqqvpy7', name: 'Yes No Detective', tag: '', g: 'puzzle',
     ko: ['예 · 아니오로 범인 찾기', '질문만으로 사건을 푸는 짧은 추리.'], en: ['Catch the culprit with yes or no', 'Short mysteries solved by questions only.'] },
 ]
-const GENRES = { all: ['전체', 'All'], smash: ['3D 부수기', 'Smash'], arcade: ['아케이드', 'Arcade'], puzzle: ['퍼즐', 'Puzzle'], shooter: ['슈팅', 'Shooter'], action: ['액션', 'Action'], defense: ['디펜스', 'Defense'] }
+const LANGS = { en: 'English', ko: '한국어', es: 'Español', pt: 'Português', ru: 'Русский', tr: 'Türkçe', de: 'Deutsch', fr: 'Français', ja: '日本語', zh: '简体中文' }
+// taglines (and hero lines) for languages beyond ko / en: [tagline, hero line]
+const X = {
+  es: { claw: ['Encerrado en una tienda de garras a las 3 AM', 'Atrapa el peluche con la llave y abre 6 puertas antes del amanecer.'], gulp: ['Trágate el pueblo entero', 'Un agujero diminuto crece hasta comerse 10 pueblos.'], squeeze: ['Mételos antes de que se cierren las puertas', 'Luchadores de sumo, pianos, vacas: todos al ascensor.'], melt: ['Derrite el mundo con un láser', 'De un banco del parque a la Torre Eiffel: 11 ciudades.'], sky: ['Seis héroes, cinco cielos'], bumpy: ['Boda en 5 minutos: entrega el pastel'], mythic: ['Pantallas llenas de monstruos y botín'], swarm: ['Elige puertas y haz crecer tu ejército'], random: ['Saca, combina y aguanta 60 oleadas'], tower: ['Defiende con palomitas y aspiradoras'], detective: ['Atrapa al culpable con sí o no'] },
+  pt: { claw: ['Preso numa loja de garra às 3h', 'Pegue a pelúcia da chave e abra 6 portas antes do amanhecer.'], gulp: ['Engula a cidade inteira', 'Um buraco minúsculo cresce até devorar 10 cidades.'], squeeze: ['Enfie todos antes da porta fechar', 'Lutadores de sumô, pianos, vacas: todos no elevador.'], melt: ['Derreta o mundo com um laser', 'De um banco de praça à Torre Eiffel: 11 cidades.'], sky: ['Seis heróis, cinco céus'], bumpy: ['Casamento em 5 minutos: entregue o bolo'], mythic: ['Telas cheias de monstros e saque'], swarm: ['Escolha portões e aumente o exército'], random: ['Sorteie, junte e aguente 60 ondas'], tower: ['Defenda com pipoca e aspiradores'], detective: ['Pegue o culpado com sim ou não'] },
+  ru: { claw: ['Заперт в автоматах в 3 часа ночи', 'Достань игрушку с ключом и открой 6 дверей до рассвета.'], gulp: ['Проглоти весь город', 'Крошечная дыра растёт и съедает 10 городов.'], squeeze: ['Затолкай всех, пока двери не закрылись', 'Сумоисты, пианино, коровы — все в лифт.'], melt: ['Расплавь мир лазером', 'От скамейки до Эйфелевой башни: 11 городов.'], sky: ['Шесть героев, пять небес'], bumpy: ['Свадьба через 5 минут: довези торт'], mythic: ['Экран полон монстров и добычи'], swarm: ['Выбирай ворота и расти армию'], random: ['Тяни, объединяй, держи 60 волн'], tower: ['Защита попкорном и пылесосами'], detective: ['Найди виновного вопросами «да» или «нет»'] },
+  tr: { claw: ['Gece 3te pençe dükkânına kilitlendin', 'Anahtarlı peluşu kap, şafaktan önce 6 kapıyı aç.'], gulp: ['Bütün kasabayı yut', 'Minik bir delik büyüyüp 10 kasabayı yutar.'], squeeze: ['Kapı kapanmadan herkesi tıkıştır', 'Sumo güreşçileri, piyanolar, inekler: herkes asansöre.'], melt: ['Dünyayı lazerle erit', 'Park bankından Eyfel Kulesine: 11 şehir.'], sky: ['Altı kahraman, beş gökyüzü'], bumpy: ['Düğüne 5 dakika: pastayı teslim et'], mythic: ['Canavar dolu ekranlar ve ganimet'], swarm: ['Kapıları seç, ordunu büyüt'], random: ['Çek, birleştir, 60 dalga dayan'], tower: ['Patlamış mısır ve süpürgeyle savun'], detective: ['Suçluyu evet ya da hayırla bul'] },
+  de: { claw: ['Um 3 Uhr im Greiferladen eingesperrt', 'Schnapp das Plüschtier mit dem Schlüssel und öffne 6 Türen vor dem Morgengrauen.'], gulp: ['Verschling die ganze Stadt', 'Ein winziges Loch wächst, bis es 10 Städte frisst.'], squeeze: ['Alle rein, bevor die Tür zugeht', 'Sumoringer, Klaviere, Kühe: alle in den Aufzug.'], melt: ['Schmilz die Welt mit einem Laser', 'Von der Parkbank bis zum Eiffelturm: 11 Städte.'], sky: ['Sechs Helden, fünf Himmel'], bumpy: ['Hochzeit in 5 Minuten: liefere die Torte'], mythic: ['Bildschirme voller Monster und Beute'], swarm: ['Wähle Tore, lass dein Heer wachsen'], random: ['Ziehen, verschmelzen, 60 Wellen halten'], tower: ['Verteidige mit Popcorn und Staubsaugern'], detective: ['Finde den Täter mit Ja oder Nein'] },
+  fr: { claw: ['Enfermé dans une boutique de pinces à 3 h', "Attrape la peluche à la clé et ouvre 6 portes avant l'aube."], gulp: ['Avale toute la ville', "Un petit trou grandit jusqu'à dévorer 10 villes."], squeeze: ['Fais-les tous entrer avant la fermeture', "Sumos, pianos, vaches : tout le monde dans l'ascenseur."], melt: ['Fais fondre le monde au laser', "D'un banc public à la tour Eiffel : 11 villes."], sky: ['Six héros, cinq ciels'], bumpy: ['Mariage dans 5 minutes : livre le gâteau'], mythic: ['Des écrans pleins de monstres et de butin'], swarm: ["Choisis les portes, fais grandir l'armée"], random: ['Tire, fusionne, tiens 60 vagues'], tower: ['Défends avec du pop-corn et des aspirateurs'], detective: ['Trouve le coupable par oui ou non'] },
+  ja: { claw: ['午前3時、クレーンゲーム店に閉じ込められた', '鍵のぬいぐるみを取って、夜明けまでに扉を6つ開けろ。'], gulp: ['穴ひとつで町をまるごと', '小さな穴が大きくなって10の町を飲み込む。'], squeeze: ['扉が閉まる前に全員乗せろ', '力士もピアノも牛も、エレベーターにぎゅうぎゅう。'], melt: ['レーザーで世界を溶かせ', 'ベンチからエッフェル塔まで、11の都市。'], sky: ['ヒーロー6人、空は5つ'], bumpy: ['結婚式まで5分、ケーキを届けろ'], mythic: ['モンスターだらけの画面とお宝'], swarm: ['ゲートを選んでヒーロー軍団を増やせ'], random: ['引いて合体、60ウェーブを守れ'], tower: ['ポップコーンと掃除機で守るディフェンス'], detective: ['はい・いいえで犯人を探せ'] },
+  zh: { claw: ['凌晨3点,被困在抓娃娃店', '抓住带钥匙的玩偶,天亮前打开6扇门。'], gulp: ['一个洞吞掉整个小镇', '小洞越变越大,吞下10个小镇。'], squeeze: ['关门前把所有人塞进去', '相扑选手、钢琴、奶牛,全都塞进电梯。'], melt: ['用激光融化世界', '从公园长椅到埃菲尔铁塔,11座城市。'], sky: ['六位英雄,五片天空'], bumpy: ['婚礼还有5分钟,送蛋糕'], mythic: ['满屏怪物与战利品'], swarm: ['选择大门,壮大英雄军团'], random: ['抽卡合成,守住60波'], tower: ['用爆米花和吸尘器守城'], detective: ['用是或否找出凶手'] },
+}
+const UI = {
+  en: { all: 'All games', foot: 'No install. Play free in your PC or phone browser.', play: 'Play now', lang: 'Language', g: ['All', 'Smash', 'Arcade', 'Puzzle', 'Shooter', 'Action', 'Defense'] },
+  ko: { all: '모든 게임', foot: '설치 없이 PC · 폰 브라우저에서 바로, 무료로 즐기세요.', play: '지금 플레이', lang: '언어', g: ['전체', '3D 부수기', '아케이드', '퍼즐', '슈팅', '액션', '디펜스'] },
+  es: { all: 'Todos los juegos', foot: 'Sin instalar. Juega gratis en el navegador del PC o del móvil.', play: 'Jugar', lang: 'Idioma', g: ['Todo', 'Destrucción', 'Arcade', 'Puzle', 'Disparos', 'Acción', 'Defensa'] },
+  pt: { all: 'Todos os jogos', foot: 'Sem instalar. Jogue grátis no navegador do PC ou celular.', play: 'Jogar', lang: 'Idioma', g: ['Tudo', 'Destruição', 'Arcade', 'Quebra-cabeça', 'Tiro', 'Ação', 'Defesa'] },
+  ru: { all: 'Все игры', foot: 'Без установки. Играйте бесплатно в браузере ПК или телефона.', play: 'Играть', lang: 'Язык', g: ['Все', 'Разрушение', 'Аркада', 'Головоломки', 'Шутеры', 'Экшен', 'Защита'] },
+  tr: { all: 'Tüm oyunlar', foot: 'Kurulum yok. PC veya telefon tarayıcısında ücretsiz oyna.', play: 'Oyna', lang: 'Dil', g: ['Hepsi', 'Yıkım', 'Arcade', 'Bulmaca', 'Nişancı', 'Aksiyon', 'Savunma'] },
+  de: { all: 'Alle Spiele', foot: 'Ohne Installation. Kostenlos im Browser auf PC oder Handy.', play: 'Jetzt spielen', lang: 'Sprache', g: ['Alle', 'Zerstörung', 'Arcade', 'Puzzle', 'Shooter', 'Action', 'Verteidigung'] },
+  fr: { all: 'Tous les jeux', foot: 'Sans installation. Jouez gratuitement dans le navigateur, PC ou mobile.', play: 'Jouer', lang: 'Langue', g: ['Tout', 'Destruction', 'Arcade', 'Puzzle', 'Tir', 'Action', 'Défense'] },
+  ja: { all: 'すべてのゲーム', foot: 'インストール不要。PC・スマホのブラウザで無料プレイ。', play: '今すぐプレイ', lang: '言語', g: ['すべて', '破壊', 'アーケード', 'パズル', 'シューティング', 'アクション', 'ディフェンス'] },
+  zh: { all: '全部游戏', foot: '无需安装,在电脑或手机浏览器免费畅玩。', play: '立即游玩', lang: '语言', g: ['全部', '破坏', '街机', '益智', '射击', '动作', '塔防'] },
+}
+const GKEYS = ['all', 'smash', 'arcade', 'puzzle', 'shooter', 'action', 'defense']
 const TAGS = { new: 'NEW', up: 'UPDATE', hot: 'HOT' }
-const T = { all: ['모든 게임', 'All games'], foot: ['설치 없이 PC · 폰 브라우저에서 바로, 무료로 즐기세요.', 'No install. Play free in your PC or phone browser.'], play: ['지금 플레이', 'Play now'] }
 let lang = 'ko', genre = 'all', slide = 0, timer
-try { lang = localStorage.getItem('kv_lang') || (navigator.language.startsWith('ko') ? 'ko' : 'en') } catch { lang = navigator.language.startsWith('ko') ? 'ko' : 'en' }
-const L = (pair) => pair[lang === 'ko' ? 0 : 1]
+const guess = () => { const n = (navigator.language || 'en').slice(0, 2); return LANGS[n] ? n : 'en' }
+try { lang = localStorage.getItem('kv_lang') || guess() } catch { lang = guess() }
+if (!LANGS[lang]) lang = 'en'
+const U = () => UI[lang]
+const txt = (g) => g[lang] || (X[lang] && X[lang][g.id] ? [X[lang][g.id][0], X[lang][g.id][1] || X[lang][g.id][0]] : g.en)
+const gname = (k) => U().g[GKEYS.indexOf(k)]
 const href = (g) => `https://playgama.ai/play/${g.url}`
 function render() {
   document.documentElement.lang = lang
-  document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.l === lang))
-  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = L(T[e.dataset.t]) })
+  document.getElementById('langName').textContent = LANGS[lang]
+  document.getElementById('popTitle').textContent = U().lang
+  document.getElementById('langs').innerHTML = Object.entries(LANGS).map(([k, v]) => `<button data-l="${k}" class="${k === lang ? 'on' : ''}" lang="${k}">${v}</button>`).join('')
+  document.querySelectorAll('#langs button').forEach((b) => b.onclick = () => { lang = b.dataset.l; try { localStorage.setItem('kv_lang', lang) } catch {} closePop(); render() })
+  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = U()[e.dataset.t] })
   const heroes = G.filter((g) => g.hero)
   document.getElementById('hero').innerHTML = heroes.map((g, i) => `<a class="slide${i === slide ? ' on' : ''}" href="${href(g)}" target="_blank" rel="noopener">
     <img src="img/${g.id}_hero.webp" alt="${g.name}" ${i ? 'loading="lazy"' : ''}><div class="shade"></div>
-    <div class="txt">${g.tag ? `<span class="tag ${g.tag}">${TAGS[g.tag]}</span>` : ''}<h2>${g[lang][0]}</h2><p>${g.name} · ${g[lang][1]}</p><span class="play">▶ ${L(T.play)}</span></div></a>`).join('')
+    <div class="txt">${g.tag ? `<span class="tag ${g.tag}">${TAGS[g.tag]}</span>` : ''}<h2>${txt(g)[0]}</h2><p>${g.name} · ${txt(g)[1]}</p><span class="play">▶ ${U().play}</span></div></a>`).join('')
     + `<div class="dots">${heroes.map((_, i) => `<button aria-label="${i + 1}" class="${i === slide ? 'on' : ''}" data-i="${i}"></button>`).join('')}</div>`
   document.querySelectorAll('.dots button').forEach((b) => b.onclick = (e) => { e.preventDefault(); slide = +b.dataset.i; render(); restart() })
-  document.getElementById('chips').innerHTML = Object.keys(GENRES).map((k) => `<button class="chip${k === genre ? ' on' : ''}" data-g="${k}">${L(GENRES[k])}</button>`).join('')
+  document.getElementById('chips').innerHTML = GKEYS.map((k) => `<button class="chip${k === genre ? ' on' : ''}" data-g="${k}">${gname(k)}</button>`).join('')
   document.querySelectorAll('.chip').forEach((b) => b.onclick = () => { genre = b.dataset.g; render() })
   document.getElementById('grid').innerHTML = G.filter((g) => genre === 'all' || g.g === genre).map((g) => `<a class="card" href="${href(g)}" target="_blank" rel="noopener">
-    <div class="thumb"><img src="img/${g.id}.webp" alt="${g.name}" loading="lazy" width="640" height="360">${g.tag ? `<span class="tag ${g.tag}">${TAGS[g.tag]}</span>` : ''}<div class="go"><span>▶ ${L(T.play)}</span></div></div>
-    <div class="info"><b>${g.name}</b><p>${g[lang][0]}</p><span class="genre">${L(GENRES[g.g])}</span><span class="dev">PC · Mobile</span></div></a>`).join('')
+    <div class="thumb"><img src="img/${g.id}.webp" alt="${g.name}" loading="lazy" width="640" height="360">${g.tag ? `<span class="tag ${g.tag}">${TAGS[g.tag]}</span>` : ''}<div class="go"><span>▶ ${U().play}</span></div></div>
+    <div class="info"><b>${g.name}</b><p>${txt(g)[0]}</p><span class="genre">${gname(g.g)}</span><span class="dev">PC · Mobile</span></div></a>`).join('')
 }
 function restart() { clearInterval(timer); timer = setInterval(() => { slide = (slide + 1) % G.filter((g) => g.hero).length; document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('on', i === slide)); document.querySelectorAll('.dots button').forEach((b, i) => b.classList.toggle('on', i === slide)) }, 5000) }
-document.querySelectorAll('.lang button').forEach((b) => b.onclick = () => { lang = b.dataset.l; try { localStorage.setItem('kv_lang', lang) } catch {} render() })
+const pop = document.getElementById('pop')
+function closePop() { pop.classList.remove('on') }
+document.getElementById('langBtn').onclick = () => pop.classList.add('on')
+pop.onclick = (e) => { if (e.target === pop) closePop() }
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop() })
 render(); restart()
 </script>
 </body>
