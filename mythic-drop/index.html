@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+        <title>Mythic Drop</title>
+        <style>
+            html, body, #canvas {
+                margin: 0;
+                padding: 0;
+                border: 0;
+            }
+
+            body {
+                color: white;
+                background-color: black;
+                overflow: hidden;
+                touch-action: none;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+            }
+
+            #canvas {
+                display: block;
+            }
+
+            #canvas:focus {
+                outline: none;
+            }
+
+            #status, #status-splash, #status-progress {
+                position: absolute;
+                left: 0;
+                right: 0;
+            }
+
+            #status, #status-splash {
+                top: 0;
+                bottom: 0;
+            }
+
+            #status {
+                background-color: #07080d;
+                transition: opacity 0.3s linear;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 9000;
+            }
+
+            /* The loading film (tools/loading_film.js) fills the screen, cut to fit either way round. */
+            #loading-film {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            /* Upright the whole width would show only a sliver of the film: a band in the upper part instead,
+               cut to about 60% of its width (the knight stays in it). */
+            @media (orientation: portrait) {
+                #loading-film {
+                    top: 22vh;
+                    height: 40vh;
+                }
+            }
+
+            /* Behind it upright: the same film, blurred and dimmed, filling the screen (no black bands). */
+            #loading-film-back {
+                display: none;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                filter: blur(14px) brightness(0.55);
+                transform: scale(1.1);
+            }
+
+            @media (orientation: portrait) {
+                #loading-film-back {
+                    display: block;
+                }
+            }
+
+
+            #status-notice {
+                display: none;
+            }
+
+            #loader {
+                position: absolute;
+                left: 50%;
+                bottom: max(7%, 24px);
+                transform: translateX(-50%);
+                box-sizing: border-box;
+                width: min(88vw, 480px);
+                padding: 16px 24px 18px;
+                border-radius: 16px;
+                background-color: rgba(16, 20, 28, 0.82);
+                color: white;
+                font-family: 'Noto Sans', 'Malgun Gothic', 'Apple SD Gothic Neo', Arial, sans-serif;
+                text-align: center;
+            }
+
+            #loader-percent {
+                font-size: 32px;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+
+            #loader-bar {
+                position: relative;
+                overflow: hidden;
+                height: 18px;
+                margin: 10px 0 12px;
+                border-radius: 9px;
+                background-color: rgba(255, 255, 255, 0.18);
+            }
+
+            /* Drawn by scaling (the compositor's work): it keeps moving while the engine holds the page's one thread. */
+            #loader-fill {
+                height: 100%;
+                width: 100%;
+                border-radius: 9px;
+                background-color: #fcdb2b;
+                transform: scaleX(0);
+                transform-origin: left center;
+                transition: transform 0.2s linear;
+                will-change: transform;
+            }
+
+            /* The download fills 0-80%, the engine's start the rest: the bar never stands still (2026-11-08,
+               a bar stopped at 100% for 10 s on a phone looked broken). */
+            #loader.starting #loader-fill {
+                transition: none;
+                animation: loader-start 14s cubic-bezier(0.1, 0.6, 0.3, 1) forwards;
+            }
+
+            @keyframes loader-start {
+                from { transform: scaleX(0.8); }
+                to { transform: scaleX(0.98); }
+            }
+
+            #loader.starting #loader-percent {
+                visibility: hidden;
+            }
+
+            /* Runs on the compositor, so it keeps moving while the engine holds the page's one thread. */
+            #loader-shine {
+                display: none;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 35%;
+                background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+                will-change: transform;
+                animation: loader-shine 1.1s linear infinite;
+            }
+
+            #loader.starting #loader-shine {
+                display: block;
+            }
+
+            @keyframes loader-shine {
+                from { transform: translateX(-100%); }
+                to { transform: translateX(290%); }
+            }
+
+            #loader-text {
+                font-size: 22px;
+                line-height: 1.3;
+            }
+
+            #status-notice {
+                background-color: #5b3943;
+                border-radius: 0.5rem;
+                border: 1px solid #9b3943;
+                color: #e0e0e0;
+                font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+                line-height: 1.3;
+                margin: 0 2rem;
+                overflow: hidden;
+                padding: 1rem;
+                text-align: center;
+                z-index: 1;
+            }
+
+
+            /* A low landscape screen (a phone on its side): a smaller box at the bottom, off the knight. */
+            @media (orientation: landscape) and (max-height: 500px) {
+                #loader {
+                    bottom: 8px;
+                    width: min(60vw, 420px);
+                    padding: 8px 18px 10px;
+                }
+                #loader-percent {
+                    font-size: 24px;
+                }
+                #loader-bar {
+                    height: 14px;
+                    margin: 6px 0 8px;
+                }
+            }
+
+            /* After the download, while the engine starts and holds the page's one thread (the film stops then):
+               scenes of the game, crossfading and slowly drawing closer, one every 4 s. Opacity and transform
+               only, the compositor's work, so they keep moving (2026-11-08 사용자 "로딩되는 동안 ... 심심하지 않게"). */
+            #loading-carousel {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                opacity: 0;
+                transition: opacity 0.5s linear;
+            }
+
+            #status.starting #loading-carousel {
+                opacity: 1;
+            }
+
+            #loading-film, #loading-film-back {
+                transition: opacity 0.5s linear;
+            }
+
+            #status.starting #loading-film, #status.starting #loading-film-back {
+                opacity: 0;
+            }
+
+            .slide {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                opacity: 0;
+                will-change: opacity, transform;
+            }
+
+            .slide img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .slide figcaption {
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 9%;
+                text-align: center;
+                color: white;
+                font-family: 'Noto Sans', 'Malgun Gothic', 'Apple SD Gothic Neo', Arial, sans-serif;
+                font-size: 24px;
+                font-weight: 700;
+                text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 2px black;
+            }
+
+            #status.starting .slide {
+                animation: slide 24s linear infinite;
+                animation-delay: calc(var(--i) * 4s);
+            }
+
+            #status.starting .slide:first-child {
+                opacity: 1;
+            }
+
+            @keyframes slide {
+                0% { opacity: 0; transform: scale(1); }
+                2.08% { opacity: 1; }
+                16.67% { opacity: 1; }
+                18.75% { opacity: 0; transform: scale(1.08); }
+                100% { opacity: 0; transform: scale(1.08); }
+            }
+        </style>
+        <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    </head>
+    <body>
+        <canvas id="canvas">
+            Your browser does not support the canvas tag.
+        </canvas>
+
+        <noscript>
+            Your browser does not support JavaScript.
+        </noscript>
+
+        <div id="status">
+            <canvas id="loading-film-back" width="240" height="100"></canvas>
+            <canvas id="loading-film" width="960" height="402"></canvas>
+            <div id="loading-carousel">
+                <figure class="slide" style="--i: 0"><img src="loading_0_map0.webp" alt=""><figcaption data-ko="이끼 아래 길이 묻힌 들판" data-en="Fields where moss buried the roads"></figcaption></figure>
+                <figure class="slide" style="--i: 1"><img src="loading_1_map1.webp" alt=""><figcaption data-ko="해골들이 대신 지키던 무덤가" data-en="The graveyard the skeletons kept"></figcaption></figure>
+                <figure class="slide" style="--i: 2"><img src="loading_2_legend.webp" alt=""><figcaption data-ko="잠결에 탄 땅" data-en="Ground burned in a sleep"></figcaption></figure>
+                <figure class="slide" style="--i: 3"><img src="loading_3_map3.webp" alt=""><figcaption data-ko="얼음 속 잠이 깨는 벌판" data-en="Plains where the ice-sleep breaks"></figcaption></figure>
+                <figure class="slide" style="--i: 4"><img src="loading_4_boss.webp" alt=""><figcaption data-ko="" data-en=""></figcaption></figure>
+                <figure class="slide" style="--i: 5"><img src="loading_5_heroes.webp" alt=""><figcaption data-ko="긴 잠에서 깬 영웅 여섯" data-en="Six heroes, awake from the long sleep"></figcaption></figure>
+            </div>
+            <div id="loader">
+                <div id="loader-percent">0%</div>
+                <div id="loader-bar"><div id="loader-fill"></div><div id="loader-shine"></div></div>
+                <div id="loader-text"></div>
+            </div>
+            <div id="status-notice"></div>
+        </div>
+
+        <script>
+            // The page's own loading screen; Bridge's logo is turned off in playgama-bridge-config.json.
+            const LOADER_TEXT = {
+                en: { loading: 'Loading…', starting: 'Starting…' },
+                ko: { loading: '불러오는 중…', starting: '시작하는 중…' },
+            }
+            // If the game never says it is ready, it is shown anyway instead of being covered for good.
+            const LOADER_GIVE_UP_MSEC = 30000
+            let loaderLanguage = (navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en'
+            let loaderPercent = 0
+            let loaderStarted = false
+
+            function drawLoader() {
+                const text = LOADER_TEXT[loaderLanguage]
+                document.getElementById('loader-percent').textContent = `${loaderPercent}%`
+                if (!loaderStarted) {
+                    document.getElementById('loader-fill').style.transform = `scaleX(${loaderPercent / 100})`
+                }
+                document.getElementById('loader-text').textContent = loaderStarted ? text.starting : text.loading
+                for (const caption of document.querySelectorAll('.slide figcaption')) {
+                    caption.textContent = caption.dataset[loaderLanguage]
+                }
+            }
+
+            function setLoaderLanguage(language) {
+                loaderLanguage = language === 'ko' ? 'ko' : 'en'
+                drawLoader()
+            }
+
+            function setLoaderProgress(current, total) {
+                // The carousel and the bar's second part go on at 90% of the download, while the page still has
+                // its thread: a CSS animation starts only when the page next lays itself out, and the engine
+                // takes the thread the moment the download ends (at 98% they started only after the engine had,
+                // 2026-11-08). The engine's own last call, at 100%, comes after the game has started.
+                const done = total > 0 && current / total >= 0.9
+                if (!document.getElementById('status') || !total) {
+                    return
+                }
+                loaderPercent = done ? 80 : Math.max(loaderPercent, Math.floor(current * 80 / total))
+                filmUntil = done ? FILM_STAND : 1.8 + (FILM_WAKE - 1.8) * current / total
+                if (done && !loaderStarted) {
+                    loaderStarted = true
+                    document.getElementById('loader').classList.add('starting')
+                    document.getElementById('status').classList.add('starting')
+                }
+                if (!loaderStarted || done) {
+                    drawLoader()
+                }
+            }
+
+            // The loading film: its clock runs with the download (the moss falls off the knight as the files
+            // arrive, his waking when they are in), at 30 frames a second, never ahead of the download.
+            // While the engine starts it holds the page's one thread, so the film waits on a frame then.
+            const FILM_WAKE = 15.5
+            const FILM_STAND = 18.0
+            let filmClock = 0
+            let filmUntil = 1.8
+            let filmLast = 0
+            let filmOn = true
+            const filmBack = document.getElementById('loading-film-back')
+            const filmBackPen = filmBack.getContext('2d')
+            function filmFrame(now) {
+                if (!filmOn) {
+                    return
+                }
+                requestAnimationFrame(filmFrame)
+                if (now - filmLast < 33 || !window.loadingFilm) {
+                    return
+                }
+                const step = filmLast ? Math.min(0.1, (now - filmLast) / 1000) : 0
+                filmLast = now
+                // Behind the download by more than two seconds of film: catch up three times as fast.
+                filmClock = Math.min(filmUntil, filmClock + step * (filmUntil - filmClock > 2 ? 3 : 1))
+                window.loadingFilm.draw(filmClock)
+                // Upright, the blurred copy behind (a small canvas: the blur hides the detail anyway).
+                if (filmBack.offsetParent !== null) {
+                    filmBackPen.drawImage(document.getElementById('loading-film'), 0, 0, filmBack.width, filmBack.height)
+                }
+            }
+            requestAnimationFrame(filmFrame)
+
+            // The game calls this with its first scene on screen (scripts/autoload/playgama.gd).
+            window.hideLoader = function () {
+                window.hideLoader = function () {}
+                const status = document.getElementById('status')
+                status.style.opacity = '0'
+                setTimeout(function () {
+                    filmOn = false
+                    status.remove()
+                }, 300)
+            }
+
+            drawLoader()
+        </script>
+        <script>
+// Goes into the Playgama page ahead of index.js (tools/export_web.py). The engine's two big files start
+// downloading here, while the Bridge SDK is still loading, and the engine's own requests take them.
+// The server there does not compress, so index.wasm comes from index.wasm.gz, unpacked on the way in. The first
+// bytes decide: gzip is unpacked, a wasm (the server already unpacked it) is used as it is, anything else or a
+// browser without DecompressionStream (Safari before 16.4) takes index.wasm. The engine counts the unpacked
+// bytes, so its progress still matches fileSizes.
+(function () {
+	var plain = window.fetch;
+	if (!plain) {
+		return;
+	}
+	function unpack(url) {
+		return plain.call(window, url + '.gz').then(function (response) {
+			if (!response.ok || !response.body) {
+				throw new Error('no ' + url + '.gz');
+			}
+			var reader = response.body.getReader();
+			return reader.read().then(function (first) {
+				var head = first.value;
+				var gzip = head && head[0] === 0x1f && head[1] === 0x8b;
+				var wasm = head && head[0] === 0x00 && head[1] === 0x61 && head[2] === 0x73 && head[3] === 0x6d;
+				if (!gzip && !wasm) {
+					reader.cancel();
+					throw new Error('not a wasm: ' + url + '.gz');
+				}
+				var body = new ReadableStream({
+					start: function (controller) {
+						controller.enqueue(head);
+					},
+					pull: function (controller) {
+						return reader.read().then(function (next) {
+							if (next.done) {
+								controller.close();
+							} else {
+								controller.enqueue(next.value);
+							}
+						});
+					},
+					cancel: function (reason) {
+						return reader.cancel(reason);
+					},
+				});
+				if (gzip) {
+					body = body.pipeThrough(new DecompressionStream('gzip'));
+				}
+				return new Response(body, { headers: { 'Content-Type': 'application/wasm' } });
+			});
+		});
+	}
+	function wasmFile() {
+		if (typeof DecompressionStream === 'undefined') {
+			return plain.call(window, 'index.wasm');
+		}
+		return unpack('index.wasm').catch(function () {
+			return plain.call(window, 'index.wasm');
+		});
+	}
+	var early = { 'index.wasm': wasmFile(), 'index.pck': plain.call(window, 'index.pck') };
+	window.fetch = function (input) {
+		var waiting = early[input];
+		if (waiting) {
+			// Once: the engine asks again only to retry a failed download.
+			delete early[input];
+			return waiting;
+		}
+		if (input === 'index.wasm') {
+			return wasmFile();
+		}
+		return plain.apply(window, arguments);
+	};
+	early['index.wasm'].catch(function () {});
+	early['index.pck'].catch(function () {});
+})();
+</script>
+<script>
+// The Playgama page's loading picture: "The Knight Wakes" (gamedev-kit/story/knight-wakes, drawn by code), the
+// knight a forest grew on while he slept waking up: the world's prologue (WORLD.md: the heroes wake from the
+// long sleep). Copied from there with its own canvas, half the pixels and less film grain, and no loop of its
+// own: tools/playgama_shell.html drives it (window.loadingFilm.draw(t)) at 30 fps while the files arrive and
+// stops it when the game is ready. Change the film there and copy again.
+(function () {
+
+// A giant knight, asleep so long a forest grew on him, wakes at sunrise and launches into the sky.
+// Everything is drawn in code. The world is laid out in metres and seen through a pinhole camera, so trees,
+// grass and mist shrink toward the horizon and slide past each other when the camera moves. Fog thickens
+// with distance. The knight and birds move on twos (12 drawings a second) with a slightly boiling ink line.
+const C = document.getElementById('loading-film'), X = C.getContext('2d')
+const W = 960, H = 402, S = 1, LENGTH = 25
+const U = 0.16 // metres per knight drawing unit (helmet top about 22 m kneeling, 52 m to the plume standing)
+const KZ = 240 // where the knight kneels
+let seed = 7
+const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+const r = (a, b) => a + rand() * (b - a)
+const pick = (a) => a[Math.floor(rand() * a.length)]
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
+const ease = (t) => t * t * (3 - 2 * t)
+const seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1)
+const mix = (a, b, t) => a + (b - a) * t
+const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
+const mixc = (a, b, t) => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)]
+const rgb = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
+const hash = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s) }
+function keys(t, ks) { if (t <= ks[0][0]) return ks[0][1]; for (let i = 0; i < ks.length - 1; i++) { const [a, va] = ks[i], [b, vb] = ks[i + 1]; if (t <= b) return mix(va, vb, ease((t - a) / (b - a))) } return ks[ks.length - 1][1] }
+function cnv(w, h) { const c = document.createElement('canvas'); c.width = Math.ceil(w); c.height = Math.ceil(h); return [c, c.getContext('2d')] }
+
+// ---------------------------------------------------------------- painted pieces, made once
+function blobPts(x, y, rx, ry, n = 14, j = 0.16) { const p = []; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, k = 1 + r(-j, j); p.push([x + Math.cos(a) * rx * k, y + Math.sin(a) * ry * k]) } return p }
+function pathPts(g, p, dx = 0, dy = 0) {
+  const n = p.length, m = (a, b) => [(a[0] + b[0]) / 2 + dx, (a[1] + b[1]) / 2 + dy]
+  g.beginPath(); const s = m(p[n - 1], p[0]); g.moveTo(s[0], s[1])
+  for (let i = 0; i < n; i++) { const a = p[i], e = m(a, p[(i + 1) % n]); g.quadraticCurveTo(a[0] + dx, a[1] + dy, e[0], e[1]) }
+  g.closePath()
+}
+const RIM = '#ffd08a'
+// rim light that respects overlap: erase what the new shape covers, then add its lit crescent (sun is to the right)
+function rimShape(gr, gt, pts, rx, ry, box) {
+  gt.clearRect(box[0], box[1], box[2], box[3])
+  pathPts(gt, pts); gt.fillStyle = RIM; gt.fill()
+  gt.globalCompositeOperation = 'destination-out'; pathPts(gt, pts, -rx * 0.16, ry * 0.2); gt.fill(); gt.globalCompositeOperation = 'source-over'
+  gr.globalCompositeOperation = 'destination-out'; pathPts(gr, pts); gr.fill(); gr.globalCompositeOperation = 'source-over'
+  gr.drawImage(gt.canvas, box[0], box[1], box[2], box[3], box[0], box[1], box[2], box[3])
+}
+const FOGC = '#a7b5c8'
+function silhouette(src, color) { const [c, g] = cnv(src.width, src.height); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = color; g.fillRect(0, 0, c.width, c.height); return c }
+
+const TH = 900
+function makeBroad(sd) {
+  seed = sd
+  const w = 620, h = TH, cx = w / 2, by = h - 10
+  const [base, gb] = cnv(w, h), [rim, gr] = cnv(w, h), [, gt] = cnv(w, h)
+  const crownY = h * r(0.28, 0.36), lean = r(-20, 20)
+  // trunk with root flare
+  gb.fillStyle = '#2e2522'
+  gb.beginPath(); gb.moveTo(cx - 46, by); gb.quadraticCurveTo(cx - 16, by - 60, cx - 13 + lean * 0.5, by - 200); gb.lineTo(cx - 8 + lean, crownY + 60); gb.lineTo(cx + 8 + lean, crownY + 60); gb.lineTo(cx + 15 + lean * 0.5, by - 200); gb.quadraticCurveTo(cx + 18, by - 60, cx + 50, by); gb.closePath(); gb.fill()
+  gr.strokeStyle = RIM; gr.lineWidth = 5; gr.beginPath(); gr.moveTo(cx + 46, by); gr.quadraticCurveTo(cx + 16, by - 60, cx + 13 + lean * 0.5, by - 200); gr.lineTo(cx + 7 + lean, crownY + 60); gr.stroke()
+  gb.strokeStyle = '#2e2522'
+  for (let i = 0; i < 6; i++) { const y0 = crownY + r(40, 160), s = i % 2 ? 1 : -1; gb.lineWidth = r(5, 10); gb.beginPath(); gb.moveTo(cx + lean, y0); gb.quadraticCurveTo(cx + s * r(40, 90), y0 - r(30, 60), cx + s * r(90, 200), y0 - r(60, 160)); gb.stroke() }
+  // crown: clumps, lower ones darker
+  const clumps = []
+  for (let i = 0; i < 34; i++) { const a = r(0, Math.PI * 2), d = Math.sqrt(rand()); clumps.push({ x: cx + lean + Math.cos(a) * d * w * 0.36, y: crownY + Math.sin(a) * d * h * 0.21, rx: r(48, 92) }) }
+  clumps.sort((a, b) => a.y - b.y)
+  for (const c of clumps) {
+    const ry = c.rx * r(0.62, 0.8), pts = blobPts(c.x, c.y, c.rx, ry, 16, 0.14)
+    const low = clamp((c.y - (crownY - h * 0.2)) / (h * 0.42), 0, 1)
+    pathPts(gb, pts); gb.fillStyle = rgb(mixc(hex('#3c5a40'), hex('#1b2c22'), low)); gb.fill()
+    for (let k = 0; k < 6; k++) { pathPts(gb, blobPts(c.x + r(-c.rx * 0.5, c.rx * 0.6), c.y - r(0, ry * 0.6), c.rx * r(0.18, 0.32), ry * r(0.14, 0.26), 9, 0.25)); gb.fillStyle = rgb(mixc(hex('#4d6d4d'), hex('#2a4130'), low), 0.8); gb.fill() }
+    rimShape(gr, gt, pts, c.rx, ry, [c.x - c.rx * 1.3, c.y - ry * 1.3, c.rx * 2.6, ry * 2.6])
+  }
+  return { base, rim, fog: silhouette(base, FOGC), aspect: w / h }
+}
+function makePine(sd) {
+  seed = sd
+  const w = 440, h = TH, cx = w / 2, by = h - 10
+  const [base, gb] = cnv(w, h), [rim, gr] = cnv(w, h), [, gt] = cnv(w, h)
+  gb.fillStyle = '#2b2321'; gb.beginPath(); gb.moveTo(cx - 22, by); gb.lineTo(cx - 5, h * 0.05); gb.lineTo(cx + 5, h * 0.05); gb.lineTo(cx + 24, by); gb.fill()
+  const tiers = 13, top = h * 0.03, bottom = by - h * 0.2
+  for (let i = 0; i < tiers; i++) {
+    const k = i / (tiers - 1), ty = mix(bottom, top + 40, k), tw = mix(w * 0.47, w * 0.08, Math.pow(k, 0.9)), th = mix(150, 60, k)
+    const pts = [[cx + r(-6, 6), ty - th]]
+    const n = 9
+    for (let j = 0; j <= n; j++) { const u = j / n, x = cx + tw - u * tw * 2, droop = Math.sin(u * Math.PI) * -18 + 20; pts.push([x + r(-8, 8), ty + droop + (j % 2 ? r(10, 22) : r(-4, 4))]) }
+    const shape = (g, dx = 0, dy = 0) => { g.beginPath(); g.moveTo(pts[0][0] + dx, pts[0][1] + dy); g.quadraticCurveTo(cx + tw * 0.55 + dx, ty - th * 0.4 + dy, pts[1][0] + dx, pts[1][1] + dy); for (let j = 2; j < pts.length; j++) g.lineTo(pts[j][0] + dx, pts[j][1] + dy); g.quadraticCurveTo(cx - tw * 0.55 + dx, ty - th * 0.4 + dy, pts[0][0] + dx, pts[0][1] + dy); g.closePath() }
+    shape(gb); gb.fillStyle = rgb(mixc(hex('#16271f'), hex('#2f4a3a'), k * 0.8)); gb.fill()
+    for (let q = 0; q < 5; q++) { pathPts(gb, blobPts(cx + r(-tw * 0.3, tw * 0.7), ty - r(0, th * 0.5), tw * r(0.1, 0.22), th * r(0.08, 0.14), 8, 0.3)); gb.fillStyle = 'rgba(70,100,78,0.55)'; gb.fill() }
+    const bx = [cx - tw - 30, ty - th - 30, tw * 2 + 60, th + 90]
+    gt.clearRect(...bx); shape(gt); gt.fillStyle = RIM; gt.fill(); gt.globalCompositeOperation = 'destination-out'; shape(gt, -tw * 0.1, th * 0.14); gt.fill(); gt.globalCompositeOperation = 'source-over'
+    gr.globalCompositeOperation = 'destination-out'; shape(gr); gr.fill(); gr.globalCompositeOperation = 'source-over'; gr.drawImage(gt.canvas, ...bx, ...bx)
+  }
+  return { base, rim, fog: silhouette(base, FOGC), aspect: w / h }
+}
+const VARS = [makeBroad(11), makeBroad(23), makeBroad(37), makeBroad(51), makePine(61), makePine(73), makePine(89), makePine(97)]
+
+// thin cloud streak for the dawn sky: violet underside, warm top
+const STREAK = [0, 1].map((i) => { const [c, g] = cnv(640, 64); g.filter = 'blur(5px)'; seed = 50 + i; for (let k = 0; k < 9; k++) { const x = r(190, 450), w = r(40, 110); g.fillStyle = 'rgba(120,110,150,0.8)'; g.beginPath(); g.ellipse(x, 34, w, 7, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = 'rgba(255,190,150,0.7)'; g.beginPath(); g.ellipse(x + 6, 29, w * 0.8, 3, 0, 0, Math.PI * 2); g.fill() } return c })
+// soft mist puff
+const [SOFT, gsft] = cnv(256, 128)
+{ const g = gsft.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)'); gsft.setTransform(2, 0, 0, 1, 0, 0); gsft.fillStyle = g; gsft.fillRect(0, 0, 128, 128) }
+
+// clouds: soft painted heaps, base colour plus a sunlit top
+function makeCloud(sd) {
+  seed = sd
+  const w = 700, h = 260, [base, gb] = cnv(w, h), [rim, gr] = cnv(w, h)
+  const puffs = []
+  for (let i = 0; i < 26; i++) { const x = r(80, w - 80), e = 1 - Math.abs(x - w / 2) / (w * 0.55); puffs.push([x, h - 60 - r(0, 80) * e, r(24, 64) * (0.4 + e)]) }
+  gb.filter = 'blur(4px)'; gr.filter = 'blur(6px)'
+  for (const [x, y, rr] of puffs) { gb.fillStyle = '#ab9db2'; gb.beginPath(); gb.ellipse(x, y, rr * 1.4, rr, 0, 0, Math.PI * 2); gb.fill() }
+  for (const [x, y, rr] of puffs) { gr.fillStyle = 'rgba(255,206,150,0.4)'; gr.beginPath(); gr.ellipse(x + rr * 0.25, y - rr * 0.35, rr * 1.0, rr * 0.55, 0, 0, Math.PI * 2); gr.fill() }
+  gr.filter = 'none'; gr.globalCompositeOperation = 'destination-in'; gr.drawImage(base, 0, 0)
+  gb.globalCompositeOperation = 'destination-out'; const g = gb.createLinearGradient(0, h - 70, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)'); gb.fillStyle = g; gb.fillRect(0, 0, w, h)
+  return { base, rim, aspect: w / h }
+}
+const CLOUDV = [makeCloud(301), makeCloud(313), makeCloud(331)]
+
+// far bands: mountains and two distant forest strips, fog baked in
+function makeBand(z, half, mTall, kind) {
+  const ppm = kind === 'mount' ? 0.16 : 2.2 * 1150 / (z - 150) * 0.6
+  const w = Math.min(8000, half * 2 * ppm), hpx = (mTall + 30) * ppm, gy = mTall * ppm
+  const [base, gb] = cnv(w, hpx), [rim, gr] = cnv(w, hpx)
+  if (kind === 'mount') {
+    seed = 900
+    for (const [hgt, col, off] of [[mTall, '#8792ad', 0], [mTall * 0.62, '#76829f', 2.1]]) {
+      gb.fillStyle = col; gb.beginPath(); gb.moveTo(0, hpx); let px = 0, py = gy
+      for (let x = 0; x <= w; x += 6) { const n = Math.sin(x * 0.004 + off) * 0.5 + Math.sin(x * 0.011 + off * 3) * 0.3 + Math.sin(x * 0.031) * 0.12; py = gy - hgt * ppm * (0.45 + 0.55 * Math.abs(n)); gb.lineTo(x, py) }
+      gb.lineTo(w, hpx); gb.fill()
+      gr.strokeStyle = 'rgba(255,208,138,0.35)'; gr.lineWidth = 3; gr.beginPath()
+      for (let x = 0; x <= w; x += 6) { const n = Math.sin(x * 0.004 + off) * 0.5 + Math.sin(x * 0.011 + off * 3) * 0.3 + Math.sin(x * 0.031) * 0.12; gr.lineTo(x, gy - hgt * ppm * (0.45 + 0.55 * Math.abs(n)) + 1) }
+    }
+  } else {
+    seed = Math.round(z)
+    const n = Math.round(half * 2 / 7)
+    for (let i = 0; i < n; i++) {
+      const v = VARS[Math.floor(rand() * VARS.length)], th = r(24, 42) * ppm, tw = th * v.aspect, x = rand() * w
+      gb.drawImage(v.base, x - tw / 2, gy - th + 0.02 * th, tw, th); gr.drawImage(v.rim, x - tw / 2, gy - th + 0.02 * th, tw, th)
+    }
+    // treeline base melts into a band of ground that fades out
+    const g = gb.createLinearGradient(0, gy - 8 * ppm, 0, hpx); g.addColorStop(0, 'rgba(36,52,44,0)'); g.addColorStop(0.3, 'rgba(36,52,44,1)'); g.addColorStop(1, 'rgba(36,52,44,0)')
+    gb.fillStyle = g; gb.fillRect(0, gy - 8 * ppm, w, hpx)
+  }
+  const fogA = kind === 'mount' ? 0.62 : 1 - Math.exp(-(z - 150) / 900)
+  gb.globalCompositeOperation = 'source-atop'; gb.fillStyle = rgb(hex(FOGC), fogA); gb.fillRect(0, 0, w, hpx)
+  return { base, rim, z, half, ppm, gy, w, hpx, fogA }
+}
+const BANDS = [makeBand(9000, 16000, 850, 'mount'), makeBand(2600, 3400, 44, 'forest'), makeBand(1500, 2000, 44, 'forest')]
+
+// ferns and a hanging branch for the near foreground (pre-blurred: out of focus)
+function makeFern(sd, blur) {
+  seed = sd
+  const w = 500, h = 400, [c, g] = cnv(w, h)
+  g.filter = `blur(${blur}px)`
+  for (let i = 0; i < 9; i++) {
+    const a = mix(-2.6, -0.5, i / 8) + r(-0.1, 0.1), len = r(240, 360), x0 = w / 2, y0 = h - 6
+    const ex = x0 + Math.cos(a) * len, ey = y0 + Math.sin(a) * len * 0.9 + 60
+    g.strokeStyle = '#0e1712'; g.lineWidth = 6; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x0 + Math.cos(a) * len * 0.5, y0 + Math.sin(a) * len * 0.75, ex, ey); g.stroke()
+    for (let k = 1; k < 16; k++) {
+      const u = k / 16, bx = mix(x0, ex, u) + Math.sin(u * 3) * 10, byy = mix(y0, ey, u) - Math.sin(u * Math.PI) * 50, l = 46 * (1 - u * 0.7)
+      g.fillStyle = k % 2 ? '#122019' : '#16271d'
+      for (const s of [-1, 1]) { g.beginPath(); g.ellipse(bx + s * l * 0.4, byy + l * 0.15, l * 0.5, l * 0.14, a + s * 0.9, 0, Math.PI * 2); g.fill() }
+    }
+  }
+  return { base: c, aspect: w / h }
+}
+function makeBranch(sd) {
+  seed = sd
+  const w = 900, h = 520, [c, g] = cnv(w, h)
+  g.filter = 'blur(5px)'
+  g.strokeStyle = '#0d1410'; g.lineWidth = 22; g.beginPath(); g.moveTo(-20, 30); g.quadraticCurveTo(w * 0.4, 60, w * 0.85, 150); g.stroke()
+  for (let i = 0; i < 14; i++) { // twigs hanging from the branch, leaves along them
+    const u = r(0.05, 0.95), x0 = mix(0, w * 0.85, u), y0 = 30 + u * u * 120, len = r(120, 330) * (0.5 + u * 0.5), sw = r(-60, 60)
+    g.strokeStyle = '#0d1410'; g.lineWidth = 5; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x0 + sw, y0 + len * 0.5, x0 + sw * 0.6, y0 + len); g.stroke()
+    for (let k = 0; k < 14; k++) { const q = k / 14, lx = x0 + sw * q * (1.2 - q * 0.6) + r(-12, 12), ly = y0 + len * q; g.fillStyle = pick(['#0f1a13', '#142319', '#0b130e', '#18291d']); g.beginPath(); g.ellipse(lx, ly, r(10, 22), r(5, 9), r(0.5, 2.6), 0, Math.PI * 2); g.fill() }
+  }
+  return { base: c, aspect: w / h }
+}
+const FERNS = [makeFern(401, 3), makeFern(409, 5), makeFern(419, 4)]
+const BRANCH = makeBranch(431)
+
+// ---------------------------------------------------------------- the world (metres): trees, grass, mist
+const TREES = []
+seed = 1234
+for (const [x, z, h, v] of [[-82, 206, 46, 1], [74, 222, 42, 0], [-64, 292, 48, 5], [100, 300, 46, 2], [-128, 252, 40, 6], [140, 262, 44, 4]]) TREES.push({ x, z, h, v, hero: 1 })
+// canopy over the low-angle shot only
+for (const [x, z, h, v] of [[-48, 188, 44, 0], [16, 196, 42, 2], [-36, 178, 40, 1]]) TREES.push({ x, z, h, v, only: 3 })
+const halfW = (z) => 70 + Math.max(0, z) * 0.22
+for (let z = -220; z < 330; z += r(7, 13)) for (const s of [-1, 1]) if (rand() < 0.8) TREES.push({ x: s * (halfW(z) + r(0, 260)), z: z + r(-4, 4), h: r(28, 46), v: Math.floor(r(0, 8)) })
+for (let i = 0; i < 230; i++) { const z = r(335, 1050); TREES.push({ x: r(-1, 1) * (300 + z * 0.75), z, h: r(28, 44), v: Math.floor(r(0, 8)) }) }
+TREES.forEach((t, i) => { t.i = i; t.ph = r(0, 6) })
+const TUFTS = []
+seed = 2345
+for (let i = 0; i < 260; i++) {
+  const z = Math.pow(rand(), 1.8) * 760 - 180, x = r(-1, 1) * (40 + Math.max(0, z + 180) * 0.85)
+  if (Math.hypot(x, (z - KZ) * 1.2) < 34) continue
+  TUFTS.push({ x, z, h: r(0.5, 1.7), n: 3 + Math.floor(r(0, 4)), c: pick([[44, 64, 42], [52, 74, 46], [60, 80, 50], [38, 56, 40]]), fl: rand() < 0.12 ? pick(['#f3e6c0', '#e9a7b8', '#f2cf66']) : null, ph: r(0, 6) })
+}
+const PATCHES = []
+seed = 2468
+for (let i = 0; i < 520; i++) { const z = Math.pow(rand(), 1.3) * 1100 - 180; PATCHES.push({ x: r(-1, 1) * (60 + Math.max(0, z + 180) * 0.9), z, r: r(2, 16) * (1 + Math.max(0, z) / 600), c: pick([[30, 44, 32], [24, 34, 27], [48, 62, 40], [56, 66, 44], [40, 36, 30], [62, 76, 48]]), ox: r(-0.8, 0.8) }) }
+const MIST = []
+seed = 3456
+for (let i = 0; i < 170; i++) { const z = r(-150, 1600); MIST.push({ x: r(-1, 1) * (200 + Math.max(0, z) * 0.9), z, y: r(1, 14), w: r(70, 220), hh: r(10, 26), a: r(0.12, 0.3), v: r(0.6, 2.2) }) }
+const CLOUDS = []
+seed = 4567
+for (let i = 0; i < 12; i++) CLOUDS.push({ x: r(-5000, 5000), z: r(2600, 7500), y: r(500, 2600), w: r(700, 1500), v: Math.floor(r(0, 3)) })
+for (let i = 0; i < 6; i++) CLOUDS.push({ x: r(-600, 1800), z: r(1200, 2600), y: r(500, 1600), w: r(300, 700), v: Math.floor(r(0, 3)) })
+const FG = [ // foreground plants for the opening dolly
+  { x: -13, z: -33, h: 5.5, f: 0 }, { x: -8.5, z: -27, h: 4.2, f: 1 }, { x: 10, z: -30, h: 6, f: 2 }, { x: 15, z: -24, h: 5, f: 0 }, { x: 4, z: 70, h: 2.4, f: 1 },
+]
+const FLOCK = []
+seed = 5678
+for (let i = 0; i < 80; i++) FLOCK.push({ x: r(-260, 300), y: r(38, 62), z: r(320, 600), t0: 10.05 + Math.pow(rand(), 1.5) * 1.6, vx: r(-14, 22), vy: r(12, 26), vz: r(-6, 20), ph: r(0, 6), s: r(1.2, 1.8) })
+
+// ---------------------------------------------------------------- the knight: our round blue hero with the dome helmet
+const INK = '#1c1726'
+const MOSS = ['#4f7a3c', '#5f8f47', '#3f6a33', '#77a352']
+const PIECES = []
+seed = 41
+for (let i = 0; i < 40; i++) PIECES.push({ k: 'moss', on: 'dome', u: r(-0.95, 0.95), off: r(0, 7), rx: r(8, 18), ry: r(5, 10), c: pick(MOSS), tf: r(13.0, 15.3) })
+for (let i = 0; i < 26; i++) { const left = i % 2; PIECES.push({ k: 'moss', on: 'body', a: left ? r(1.9, 2.9) : r(0.0, 0.3), off: 0, rx: r(9, 18), ry: r(6, 11), c: pick(MOSS), tf: r(13.0, 15.0) }) }
+for (let i = 0; i < 24; i++) PIECES.push({ k: 'flower', on: 'dome', u: r(-0.85, 0.85), off: r(-2, 3), c: pick(['#fff4cf', '#f4b3c6', '#ffd866', '#ffffff']), tf: r(13.1, 15.3) })
+PIECES.push({ k: 'tree', on: 'dome', u: -0.6, off: 4, h: 64, tf: 13.5 }, { k: 'tree', on: 'dome', u: 0.66, off: 4, h: 50, tf: 14.3 }, { k: 'tree', on: 'dome', u: 0.3, off: 3, h: 30, tf: 14.0 })
+for (const u of [-0.9, -0.72, -0.5, 0.82, 0.95]) PIECES.push({ k: 'vine', on: 'rim', u, len: r(26, 70), ph: r(0, 6), tf: r(13.2, 15.0) })
+for (let i = PIECES.length - 1; i >= 0; i--) if (PIECES[i].on === 'dome' && PIECES[i].k !== 'tree' && Math.abs(PIECES[i].u + 0.32) < 0.13) PIECES.splice(i, 1)
+for (const p of PIECES) { p.vx = r(-40, 40); p.spin = r(-4, 4) }
+const CLODS = []
+seed = 77
+for (let i = 0; i < 70; i++) CLODS.push({ a: r(0.1, Math.PI - 0.1), tf: r(12.9, 15.0), vx: r(-50, 50), vy: r(-40, 0), s: r(3, 9), c: pick(['#4a3628', '#5b4232', '#3a2b20', '#55703c']), spin: r(-5, 5) })
+
+function params(t) {
+  return {
+    sink: mix(4, 0, ease(seg(t, 12.8, 15.0))),
+    pose: ease(seg(t, 13.0, 15.4)),
+    slump: 1 - ease(seg(t, 12.7, 14.8)),
+    look: ease(seg(t, 15.6, 17.0)) - 0.5 * ease(seg(t, 18.3, 19.5)),
+    crouch: ease(seg(t, 17.6, 18.3)) * (1 - ease(seg(t, 18.3, 18.55))),
+    stretch: ease(seg(t, 18.35, 18.7)) * (1 - 0.6 * ease(seg(t, 19.5, 21))),
+    eyes: t < 9.0 ? 0 : t < 9.12 ? 0.5 : t < 9.6 ? 1 : t < 9.7 ? 0.2 : 1,
+    glow: t < 8.2 ? 0 : t < 8.9 ? ([0.5, 0, 0.2, 0.7, 0.05, 0.9, 0.3][Math.floor((t - 8.2) * 10)] || 0) : t < 12.6 ? 0.55 + 0.25 * ease(seg(t, 9, 12.6)) + 0.12 * Math.sin(t * 9) * seg(t, 10, 12) : 1,
+    flow: seg(t, 18.4, 19.2),
+  }
+}
+function geo(p) {
+  const st = 1 + p.crouch * 0.1 - p.stretch * 0.08, sq = mix(0.9, 1, p.pose) * (1 - p.crouch * 0.16 + p.stretch * 0.18)
+  const rx = 85 * st, ry = 80 * sq
+  const bottom = p.sink - 14 * p.pose
+  const by = bottom - ry
+  const droop = p.slump * 4
+  const hw = rx * 1.1, hb = by + ry * 0.02 + droop, htop = by - ry * 1.18 + droop
+  return { rx, ry, by, hw, hb, htop, cxr: hw * 0.16, tilt: 0.12 * p.slump - 0.2 * p.look }
+}
+const domeY = (G, u) => G.hb - (G.hb - G.htop) * Math.pow(Math.max(0, 1 - u * u), 0.42)
+function rimY(G, u) { const a = Math.abs(u); return G.hb + G.ry * 0.15 * (1 - a) }
+function anchor(G, p) {
+  if (p.on === 'dome') return [p.u * G.hw * 0.95, domeY(G, p.u) + p.off]
+  if (p.on === 'rim') return [p.u * G.hw * 0.92, rimY(G, p.u) - 2]
+  return [Math.cos(p.a) * G.rx * 0.98, G.by + Math.sin(p.a) * G.ry * 0.98]
+}
+const rot = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)]
+
+let boil = 0, BJ = 0.8, LW = 2
+const J = (i) => (hash(i * 13.37 + boil * 7.71) - 0.5) * 2 * BJ
+function kEllipse(g, x, y, rx, ry, id, n = 34) {
+  const p = []; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, j = J(id * 61 + i); p.push([x + Math.cos(a) * (rx + j), y + Math.sin(a) * (ry + j)]) }
+  pathPts(g, p)
+}
+function ink(g, w = 1) { g.lineWidth = LW * w; g.strokeStyle = INK; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke() }
+function helmetPath(g, G) {
+  const { hw, hb, htop, cxr } = G, mid = htop + (hb - htop) * 0.35
+  g.beginPath(); g.moveTo(-hw + J(1), hb)
+  g.bezierCurveTo(-hw * 1.05 + J(2), mid, -hw * 0.62, htop + J(3), J(4), htop + J(5))
+  g.bezierCurveTo(hw * 0.62, htop + J(6), hw * 1.05 + J(7), mid, hw + J(8), hb)
+  g.quadraticCurveTo(hw * 0.6, hb + G.ry * 0.17, cxr + 17, hb + G.ry * 0.15)
+  g.lineTo(cxr + J(9), hb + G.ry * 0.26); g.lineTo(cxr - 17, hb + G.ry * 0.15)
+  g.quadraticCurveTo(-hw * 0.6, hb + G.ry * 0.17, -hw + J(1), hb); g.closePath()
+}
+function slits(G) { const { hw, hb, ry, cxr } = G, y0 = hb - ry * 0.62, y1 = hb - ry * 0.06; return [[cxr - 0.66 * hw, 0.085 * hw], [cxr - 0.34 * hw, 0.11 * hw], [cxr + 0.32 * hw, 0.11 * hw], [cxr + 0.6 * hw, 0.085 * hw]].map(([x, w]) => [x - w / 2, y0, w, y1 - y0]) }
+function rr(g, x, y, w, h, rad) { g.beginPath(); g.moveTo(x + rad, y); g.lineTo(x + w - rad, y); g.quadraticCurveTo(x + w, y, x + w, y + rad); g.lineTo(x + w, y + h); g.lineTo(x, y + h); g.lineTo(x, y + rad); g.quadraticCurveTo(x, y, x + rad, y); g.closePath() }
+// rim light band on the local left (screen right after the mirror), clipped to the current path
+function rimLight(g, x0, x1, a) { if (a <= 0.01) return; g.save(); g.clip(); const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, rgb(hex(RIM), a)); gr.addColorStop(1, rgb(hex(RIM), 0)); g.globalCompositeOperation = 'lighter'; g.fillStyle = gr; g.fillRect(x0 - 40, -600, x1 - x0 + 40, 1200); g.restore() }
+
+function drawPiece(g, p, x, y, ang, t) {
+  g.save(); g.translate(x, y); g.rotate(ang)
+  if (p.k === 'moss') {
+    // a tuft of moss: a dark cushion, lighter tufts on top, a few grass blades
+    seed = Math.round(p.rx * 1000 + p.ry * 37)
+    pathPts(g, blobPts(0, 0, p.rx, p.ry * 0.8, 11, 0.3)); g.fillStyle = '#2c4a2a'; g.fill()
+    for (let i = 0; i < 6; i++) { pathPts(g, blobPts(r(-p.rx * 0.6, p.rx * 0.6), r(-p.ry * 0.7, 0), p.rx * r(0.25, 0.45), p.ry * r(0.25, 0.4), 8, 0.3)); g.fillStyle = i < 3 ? p.c : '#86b25c'; g.fill() }
+    g.strokeStyle = '#4b7a36'; g.lineWidth = LW * 0.45; g.beginPath()
+    for (let i = 0; i < 4; i++) { const bx = r(-p.rx * 0.7, p.rx * 0.7); g.moveTo(bx, -p.ry * 0.3); g.quadraticCurveTo(bx + 1, -p.ry - 3, bx + r(-4, 5) + J(i + 80), -p.ry - r(5, 12)) }
+    g.stroke()
+  } else if (p.k === 'flower') {
+    g.fillStyle = p.c; for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; g.beginPath(); g.arc(Math.cos(a) * 2.4, Math.sin(a) * 2.4 - 3, 2, 0, Math.PI * 2); g.fill() }
+    g.fillStyle = '#f2b03a'; g.beginPath(); g.arc(0, -3, 1.4, 0, Math.PI * 2); g.fill()
+  } else if (p.k === 'tree') {
+    g.strokeStyle = '#4a3326'; g.lineWidth = Math.max(LW, p.h * 0.09); g.lineCap = 'round'; g.beginPath(); g.moveTo(0, 2); g.quadraticCurveTo(J(90) + 4, -p.h * 0.4, J(91) - 2, -p.h * 0.75); g.stroke()
+    seed = p.h * 31
+    for (let k = 0; k < 6; k++) { const bx = r(-p.h * 0.3, p.h * 0.3), byy = -p.h * r(0.6, 1.05), s = p.h * r(0.16, 0.26); kEllipse(g, bx, byy, s, s * 0.8, 500 + k + p.h, 12); g.fillStyle = pick(['#3f7a3c', '#4f8f45', '#5ea24f', '#376b35']); g.fill(); ink(g, 0.55) }
+  } else if (p.k === 'vine') {
+    const len = p.len, sw = Math.sin(t * 1.3 + p.ph) * 4
+    g.strokeStyle = '#3a6431'; g.lineWidth = LW * 0.9; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(sw, len * 0.5, sw * 1.6 + J(p.ph * 10), len); g.stroke()
+    for (let k = 1; k <= 5; k++) { const u = k / 5; g.fillStyle = k % 2 ? '#5a9447' : '#467c3a'; g.beginPath(); g.ellipse(sw * u * 1.4 + (k % 2 ? 3 : -3), len * u, 4, 2.2, k % 2 ? 0.6 : -0.6, 0, Math.PI * 2); g.fill() }
+  }
+  g.restore()
+}
+
+// the knight in his own drawing units, origin at the ground under him, facing right like the game art (mirrored by the caller)
+function knight(g, p, t, sunK) {
+  const G = geo(p)
+  g.save()
+  // the part still under the ground is not drawn
+  if (p.sink > 0.5) { g.beginPath(); g.rect(-400, -900, 800, 900 - 2); g.clip() }
+  g.rotate(G.tilt)
+  const { rx, ry, by, hw, hb, htop, cxr } = G
+  // cape
+  const fl = p.flow
+  g.beginPath(); g.moveTo(-rx * 0.4, by - ry * 0.55)
+  g.quadraticCurveTo(-rx * 1.45 - fl * 20, by - ry * 0.2 + fl * 30, -rx * 1.3 - fl * 10 + J(20), by + ry * 0.85 + fl * 70)
+  g.quadraticCurveTo(-rx * 1.05, by + ry * 0.7 + fl * 60, -rx * 0.95 + J(21), by + ry * 0.95 + fl * 80)
+  g.quadraticCurveTo(-rx * 0.75, by + ry * 0.8, -rx * 0.4, by + ry * 0.9 + fl * 40); g.closePath()
+  g.fillStyle = '#d4342c'; g.fill(); rimLight(g, -rx * 1.5, -rx * 1.1, sunK * 0.9); ink(g)
+  g.beginPath(); g.moveTo(-rx * 0.6, by - ry * 0.2); g.quadraticCurveTo(-rx * 1.1, by + ry * 0.3, -rx * 1.0, by + ry * 0.85 + fl * 70); g.lineTo(-rx * 0.8, by + ry * 0.8); g.closePath(); g.fillStyle = '#9b1f27'; g.fill()
+  // feet
+  if (p.pose > 0.2) for (const [fx, id] of [[-0.42, 30], [0.42, 31]]) { kEllipse(g, fx * rx, -8 + p.sink, rx * 0.27, 15, id, 20); g.fillStyle = '#6fb0e3'; g.fill(); ink(g) }
+  // round blue body with a cel shade
+  kEllipse(g, 0, by, rx, ry, 1); g.fillStyle = '#93cdf3'; g.fill()
+  g.save(); g.clip(); g.fillStyle = '#629fd6'; g.beginPath(); g.ellipse(rx * 0.32, by + ry * 0.3, rx * 0.95, ry * 0.85, 0, 0, Math.PI * 2); g.fill()
+  g.fillStyle = 'rgba(255,255,255,0.35)'; g.beginPath(); g.ellipse(-rx * 0.5, by + ry * 0.05, rx * 0.22, ry * 0.3, -0.3, 0, Math.PI * 2); g.fill(); g.restore()
+  kEllipse(g, 0, by, rx, ry, 1); rimLight(g, -rx, -rx * 0.55, sunK); ink(g, 1.15)
+  // face: closed eyes while asleep, the game's fierce little eyes once awake
+  const ey = by + ry * 0.42 + p.slump * 2
+  for (const [ex, side] of [[rx * 0.08, -1], [rx * 0.66, 1]]) {
+    if (p.eyes < 0.4) { g.beginPath(); g.moveTo(ex - 9, ey); g.quadraticCurveTo(ex, ey + 7, ex + 9, ey); ink(g, 1.1) }
+    else {
+      const h = 14 * p.eyes
+      g.beginPath(); g.moveTo(ex - 9, ey - h * 0.55 + side * 3); g.lineTo(ex + 9, ey - h * 0.55 - side * 3); g.quadraticCurveTo(ex + 10, ey + h, ex, ey + h); g.quadraticCurveTo(ex - 10, ey + h, ex - 9, ey - h * 0.55 + side * 3); g.fillStyle = '#1b1828'; g.fill()
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(ex - 3, ey - 1, 2.6, 0, Math.PI * 2); g.fill()
+    }
+  }
+  g.beginPath(); const mx = rx * 0.38, my = by + ry * 0.66 + p.slump * 2
+  if (p.eyes < 0.4) { g.moveTo(mx - 4, my); g.quadraticCurveTo(mx, my + 3, mx + 4, my) } else { g.moveTo(mx - 9, my - 2); g.quadraticCurveTo(mx, my + 7, mx + 9, my - 2) }
+  ink(g, 0.9)
+  // chest light housing
+  g.beginPath(); g.arc(-rx * 0.3, by + ry * 0.72, 7, 0, Math.PI * 2); g.fillStyle = '#5a6f86'; g.fill(); ink(g, 0.8)
+  // helmet
+  helmetPath(g, G); g.fillStyle = '#c3cad3'; g.fill()
+  g.save(); g.clip()
+  g.fillStyle = '#9aa4b1'; g.beginPath(); g.ellipse(hw * 0.5, hb + 10, hw * 0.9, (hb - htop) * 0.55, 0, 0, Math.PI * 2); g.fill()
+  g.fillStyle = '#e9edf2'; g.beginPath(); g.ellipse(-hw * 0.42, htop + (hb - htop) * 0.3, hw * 0.16, (hb - htop) * 0.22, -0.4, 0, Math.PI * 2); g.fill()
+  g.fillStyle = 'rgba(120,90,70,0.35)'; for (const [qx, qy, qs] of [[-0.5, 0.55, 8], [0.3, 0.2, 6], [0.62, 0.7, 7], [-0.15, 0.82, 5]]) { g.beginPath(); g.ellipse(qx * hw, htop + qy * (hb - htop), qs, qs * 0.6, 0.4, 0, Math.PI * 2); g.fill() }
+  g.restore()
+  helmetPath(g, G); rimLight(g, -hw * 1.05, -hw * 0.6, sunK); ink(g, 1.15)
+  // centre ridge
+  g.beginPath(); g.moveTo(cxr - 9, htop + 4); g.lineTo(cxr + 9, htop + 4); g.lineTo(cxr + 13, hb + ry * 0.15); g.lineTo(cxr, hb + ry * 0.25); g.lineTo(cxr - 13, hb + ry * 0.15); g.closePath(); g.fillStyle = '#d6dce3'; g.fill()
+  g.save(); g.clip(); g.fillStyle = '#a7b0bc'; g.fillRect(cxr, htop, 20, hb - htop + 40); g.restore(); ink(g, 0.8)
+  // visor slits (dark until the light comes on)
+  for (const [sx, sy, sw, sh] of slits(G)) { rr(g, sx, sy, sw, sh, sw * 0.4); g.fillStyle = '#272735'; g.fill(); ink(g, 0.8) }
+  // ear bolt and top knob
+  kEllipse(g, -hw * 0.9, hb - ry * 0.22, hw * 0.13, hw * 0.13, 40, 18); g.fillStyle = '#b3bcc7'; g.fill(); ink(g)
+  kEllipse(g, -hw * 0.9, hb - ry * 0.22, hw * 0.06, hw * 0.06, 41, 12); g.fillStyle = '#8f99a6'; g.fill(); ink(g, 0.6)
+  rr(g, cxr * 0.4 - hw * 0.11, htop - 14, hw * 0.22, 18, 6); g.fillStyle = '#bcc4ce'; g.fill(); ink(g)
+  // red plume sweeping back
+  const px = cxr * 0.4, py = htop - 12, sway = J(70) * 2 + p.flow * 16 - p.stretch * 10
+  g.beginPath(); g.moveTo(px + 8, py)
+  g.bezierCurveTo(px + 26, py - 70, px - 40, py - 128, -hw * 0.95 + sway, py - 112)
+  g.bezierCurveTo(-hw * 1.18 + sway, py - 104, -hw * 1.12 + sway, py - 66, -hw * 0.88 + sway * 0.8, py - 58)
+  g.bezierCurveTo(-hw * 0.9, py - 82, -hw * 0.6, py - 84, -hw * 0.45, py - 64)
+  g.bezierCurveTo(-hw * 0.3, py - 44, px - 20, py - 30, px - 8, py); g.closePath()
+  g.fillStyle = '#e2362e'; g.fill()
+  g.save(); g.clip(); g.fillStyle = '#a92128'; g.beginPath(); g.ellipse(-hw * 0.5, py - 50, hw * 0.5, 24, -0.2, 0, Math.PI * 2); g.fill(); g.restore()
+  g.beginPath(); g.moveTo(px + 8, py); g.bezierCurveTo(px + 26, py - 70, px - 40, py - 128, -hw * 0.95 + sway, py - 112); g.bezierCurveTo(-hw * 1.18 + sway, py - 104, -hw * 1.12 + sway, py - 66, -hw * 0.88 + sway * 0.8, py - 58); g.bezierCurveTo(-hw * 0.9, py - 82, -hw * 0.6, py - 84, -hw * 0.45, py - 64); g.bezierCurveTo(-hw * 0.3, py - 44, px - 20, py - 30, px - 8, py); g.closePath()
+  rimLight(g, -hw * 1.2, -hw * 0.5, sunK * 0.9); ink(g)
+  g.beginPath(); g.moveTo(px - 2, py - 10); g.bezierCurveTo(px - 10, py - 70, -hw * 0.5, py - 100, -hw * 0.85, py - 98); ink(g, 0.6)
+  // the forest that grew on him, still attached
+  for (const pc of PIECES) { if (t >= pc.tf) continue; const [ax, ay] = anchor(G, pc); drawPiece(g, pc, ax, ay, 0, t) }
+  g.restore()
+  // pieces falling off, in the ground frame
+  for (const pc of PIECES) {
+    const dt = t - pc.tf; if (dt < 0 || dt > 2.6) continue
+    const P0 = params(pc.tf), G0 = geo(P0), [ax, ay] = anchor(G0, pc), [qx, qy] = rot(ax, ay, G0.tilt)
+    const y = qy + 0.5 * 150 * dt * dt - 10 * dt; if (y > 2) continue
+    drawPiece(g, pc, qx + pc.vx * dt, y, pc.spin * dt, t)
+  }
+  for (const c of CLODS) {
+    const dt = t - c.tf; if (dt < 0 || dt > 2.4) continue
+    const G0 = geo(params(c.tf)), x0 = Math.cos(c.a) * G0.rx, y0 = Math.min(-2, G0.by + Math.sin(c.a) * G0.ry)
+    const y = y0 + c.vy * dt + 0.5 * 150 * dt * dt; if (y > 2) continue
+    g.save(); g.translate(x0 + c.vx * dt, y); g.rotate(c.spin * dt); kEllipse(g, 0, 0, c.s, c.s * 0.7, 600 + Math.round(c.a * 100), 9); g.fillStyle = c.c; g.fill(); ink(g, 0.5); g.restore()
+  }
+  return G
+}
+// the glow layer: added on top after the colour grade so it reads in the dark
+function knightGlow(g, p, t) {
+  const a = p.glow; if (a <= 0) return
+  const G = geo(p)
+  g.save(); g.rotate(G.tilt); g.globalCompositeOperation = 'lighter'
+  const vy = G.hb - G.ry * 0.34
+  let h = g.createRadialGradient(G.cxr * 0.4, vy, 0, G.cxr * 0.4, vy, G.hw * 1.15); h.addColorStop(0, `rgba(90,210,255,${0.16 * a})`); h.addColorStop(1, 'rgba(90,210,255,0)')
+  g.fillStyle = h; g.fillRect(-G.hw * 2, vy - G.hw * 2, G.hw * 4, G.hw * 4)
+  for (const [sx, sy, sw, sh] of slits(G)) {
+    rr(g, sx, sy, sw, sh, sw * 0.4); g.fillStyle = `rgba(150,240,255,${0.9 * a})`; g.fill()
+    rr(g, sx + sw * 0.25, sy + 3, sw * 0.5, sh - 6, sw * 0.2); g.fillStyle = `rgba(235,255,255,${a})`; g.fill()
+  }
+  const cx = -G.rx * 0.3, cy = G.by + G.ry * 0.72
+  h = g.createRadialGradient(cx, cy, 0, cx, cy, 22 * (0.6 + a * 0.5)); h.addColorStop(0, `rgba(170,245,255,${0.7 * a})`); h.addColorStop(0.2, `rgba(110,220,255,${0.3 * a})`); h.addColorStop(1, 'rgba(90,200,255,0)')
+  g.fillStyle = h; g.fillRect(cx - 120, cy - 120, 240, 240)
+  g.fillStyle = `rgba(230,255,255,${a})`; g.beginPath(); g.arc(cx, cy, 4, 0, Math.PI * 2); g.fill()
+  g.restore()
+}
+function bird(g, x, y, s, flap, look, color = '#5b3d2e') {
+  g.save(); g.translate(x, y); g.scale(s, s)
+  g.fillStyle = color; g.beginPath(); g.moveTo(-6, -1); g.lineTo(-11, -3); g.lineTo(-10, 1); g.closePath(); g.fill()
+  g.beginPath(); g.ellipse(0, 0, 6, 4.4, -0.15, 0, Math.PI * 2); g.fill()
+  g.fillStyle = '#e8803e'; g.beginPath(); g.ellipse(2.5, 1.2, 3.4, 2.8, 0.2, 0, Math.PI * 2); g.fill()
+  g.fillStyle = color; g.beginPath(); g.arc(4.6 + look, -3.6, 3.1, 0, Math.PI * 2); g.fill()
+  g.fillStyle = '#e8b04a'; g.beginPath(); g.moveTo(7.4 + look, -4); g.lineTo(10 + look, -3.3); g.lineTo(7.4 + look, -2.6); g.fill()
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(5.4 + look, -4.3, 0.9, 0, Math.PI * 2); g.fill()
+  g.fillStyle = '#3e281d'; const w = Math.sin(flap)
+  g.beginPath(); g.moveTo(-3, -1); g.quadraticCurveTo(-4, -1 - w * 9, 2 - Math.abs(w) * 3, -2 - w * 11); g.quadraticCurveTo(2, -2, 2, 0); g.closePath(); g.fill()
+  g.strokeStyle = '#3e281d'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(-1, 4); g.lineTo(-1, 6.5); g.moveTo(1.5, 4); g.lineTo(1.5, 6.5); g.stroke()
+  g.restore()
+}
+
+// ---------------------------------------------------------------- camera and shots
+const SHOTS = [
+  { a: 0, b: 5.2, k0: { x: -20, y: 4, z: -72, f: 760, hy: 0.64, ex: 0.95 }, k1: { x: -6, y: 5, z: -44, f: 760, hy: 0.64, ex: 0.95 } },
+  { a: 5.2, b: 10.0, k0: { x: -6, y: 15.5, z: 174, f: 860, hy: 0.5, ex: 0.85 }, k1: { x: -4, y: 15, z: 180, f: 940, hy: 0.5, ex: 0.85 } },
+  { a: 10.0, b: 12.6, k0: { x: 34, y: 8, z: 96, f: 820, hy: 0.6, ex: 0.95 }, k1: { x: 30, y: 9, z: 104, f: 820, hy: 0.6, ex: 0.95 } },
+  { a: 12.6, b: 17.4, k0: { x: -15, y: 1.8, z: 166, f: 520, hy: 0.95, ex: 1 }, k1: { x: -13, y: 2.4, z: 162, f: 520, hy: 1.0, ex: 1 } },
+  { a: 17.4, b: 25, k0: { x: -6, y: 20, z: -60, f: 720, hy: 0.66, ex: 1 }, k1: { x: 10, y: 24, z: -40, f: 720, hy: 0.66, ex: 1 } },
+]
+function flight(t) { const s = Math.max(0, t - 18.4); return { x: 2.6 * s * s * s, y: 20 * s * s + 22 * s, z: KZ + 40 * s * s } }
+function camAt(t) {
+  let sh = SHOTS[0]; for (const s of SHOTS) if (t >= s.a) sh = s
+  const k = ease(seg(t, sh.a, sh.b)), c = {}
+  for (const n in sh.k0) c[n] = mix(sh.k0[n], sh.k1[n], k)
+  c.hy *= H; c.shot = SHOTS.indexOf(sh)
+  if (c.shot === 4) { // tilt up to follow him into the sky
+    const F = flight(t), d = F.z - c.z, want = H * 0.4 + (F.y + 10 - c.y) * c.f / d
+    c.hy = clamp(mix(c.hy, want, ease(seg(t, 18.6, 19.8))), c.hy, H + 110)
+  }
+  const amp = (t > 9.35 && t < 12.6 ? mix(0.6, 3.2, seg(t, 9.35, 12.4)) : 0) + (t > 12.6 && t < 15.2 ? 1.6 : 0) + (t > 18.35 && t < 19.6 ? 5 * (1 - seg(t, 18.35, 19.6)) : 0)
+  c.ox = amp * (Math.sin(t * 53) * 0.6 + Math.sin(t * 31) * 0.4); c.oy = amp * (Math.sin(t * 47 + 1) * 0.6 + Math.sin(t * 23) * 0.4)
+  return c
+}
+let cam, T, sunUp, fogDist
+const proj = (x, y, z) => { const d = z - cam.z; if (d <= 0.5) return null; const k = cam.f / d; return [W / 2 + (x - cam.x) * k + cam.ox, cam.hy - (y - cam.y) * k + cam.oy, k, d] }
+const fogA = (d) => 1 - Math.exp(-d / fogDist)
+// wind ring from the launch: radius and a decaying wobble for whatever it passes
+const RING0 = 18.38
+const ringR = (t) => t < RING0 ? 0 : 800 * (1 - Math.exp(-(t - RING0) * 1.1))
+function windBend(x, z, t) {
+  if (t < RING0) return 0
+  const d = Math.hypot(x, z - KZ), R = ringR(t); if (R < d) return 0
+  const ta = RING0 - Math.log(1 - Math.min(0.999, d / 800)) / 1.1, s = t - ta
+  return Math.sign(x || 1) * 0.5 * Math.exp(-s * 1.1) * Math.cos(s * 6) * (1 - d / 1100)
+}
+
+// ---------------------------------------------------------------- drawing the world
+function drawSky() {
+  const el = (y) => (cam.hy - y) / cam.f
+  const g = X.createLinearGradient(0, cam.hy - cam.f * 1.1, 0, cam.hy)
+  const u = sunUp
+  g.addColorStop(0, rgb(mixc(hex('#222c4a'), hex('#6f8fbf'), u)))
+  g.addColorStop(0.4, rgb(mixc(hex('#39446a'), hex('#e9b884'), u)))
+  g.addColorStop(0.75, rgb(mixc(hex('#6a6787'), hex('#ffd596'), u)))
+  g.addColorStop(1, rgb(mixc(hex('#b9958f'), hex('#fff1c6'), u)))
+  X.fillStyle = g; X.fillRect(0, 0, W, H)
+  // dawn glow on the horizon where the sun will come up, and long thin cloud streaks
+  const [gx0, gy0] = sunPos()
+  const pg = X.createRadialGradient(gx0, cam.hy, 0, gx0, cam.hy, cam.f * 0.9); pg.addColorStop(0, `rgba(255,190,150,${0.35 + 0.3 * u})`); pg.addColorStop(1, 'rgba(255,170,140,0)')
+  X.fillStyle = pg; X.fillRect(0, 0, W, H)
+  seed = 19
+  for (let i = 0; i < 14; i++) { const el = r(0.03, 0.4), sx = W / 2 + r(-1.2, 1.2) * cam.f + T * 1.5, sy = cam.hy - el * cam.f + cam.oy * 0.2, w = r(0.4, 1.1) * cam.f, h = w * r(0.025, 0.05); X.globalAlpha = r(0.25, 0.5); X.drawImage(STREAK[i % 2], sx - w / 2, sy - h / 2, w, h) }
+  X.globalAlpha = 1
+  if (u < 0.4) { seed = 9; X.fillStyle = `rgba(255,255,255,${0.7 * (1 - u / 0.4)})`; for (let i = 0; i < 90; i++) { const sx = r(0, W), sy = cam.hy - r(0.15, 0.8) * cam.f + cam.oy; if (sy < cam.hy - 30) X.fillRect(sx, sy, 0.8, 0.8) } }
+  // the sun, rising behind the forest on the right
+  const [sx, sy] = sunPos()
+  const R = 9 + 3 * u
+  let sg = X.createRadialGradient(sx, sy, 0, sx, sy, 220); sg.addColorStop(0, `rgba(255,236,190,${0.75 * seg(u, 0.05, 0.3)})`); sg.addColorStop(0.15, `rgba(255,200,140,${0.35 * seg(u, 0.05, 0.3)})`); sg.addColorStop(1, 'rgba(255,190,140,0)')
+  X.fillStyle = sg; X.fillRect(sx - 220, sy - 220, 440, 440)
+  X.fillStyle = `rgba(255,250,232,${seg(u, 0.12, 0.25)})`; X.beginPath(); X.arc(sx, sy, R, 0, Math.PI * 2); X.fill()
+}
+const sunPos = () => [W / 2 + cam.f * 0.42 + cam.ox * 0.2, cam.hy - cam.f * mix(-0.03, 0.17, sunUp) + cam.oy * 0.2]
+function drawGround() {
+  const top = Math.max(0, Math.floor(cam.hy))
+  const near = hex('#26352a'), fog = hex(FOGC)
+  for (let y = top; y < H; y += 2) {
+    const d = cam.y * cam.f / Math.max(0.5, y + 1 - cam.hy)
+    X.fillStyle = rgb(mixc(near, fog, fogA(d) * 0.95)); X.fillRect(0, y, W, 2.2)
+  }
+  // flat patches of moss, earth and grass lying on the ground: they squash toward the horizon
+  for (const o of PATCHES) {
+    const d = o.z - cam.z; if (d < Math.max(8, cam.y * 4) || d > 1400) continue
+    const k = cam.f / d, rx = o.r * k, ry = o.r * k * cam.y / d; if (ry < 0.25) continue
+    const sx = W / 2 + (o.x - cam.x) * k + cam.ox, sy = cam.hy + cam.y * k + cam.oy; if (sx + rx < 0 || sx - rx > W || sy - ry > H) continue
+    X.fillStyle = rgb(mixc(o.c, hex(FOGC), fogA(d) * 0.93), 0.4); X.beginPath(); X.ellipse(sx, sy, rx, ry, 0, 0, Math.PI * 2); X.ellipse(sx + rx * o.ox, sy - ry * 0.2, rx * 0.6, ry * 0.7, 0, 0, Math.PI * 2); X.fill()
+  }
+}
+function drawBand(b) {
+  const d = b.z - cam.z, k = cam.f / d, sx = W / 2 + (-b.half - cam.x) * k + cam.ox * 0.3, gy = cam.hy + cam.y * k + cam.oy * 0.3
+  const sc = k / b.ppm, w = b.w * sc, hh = b.hpx * sc
+  X.drawImage(b.base, sx, gy - b.gy * sc, w, hh)
+  X.globalAlpha = sunUp * 0.8 * (1 - b.fogA * 0.6); X.globalCompositeOperation = 'lighter'; X.drawImage(b.rim, sx, gy - b.gy * sc, w, hh); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'
+}
+function drawCloud(c) {
+  const P = proj(c.x + T * 4, c.y, c.z); if (!P) return
+  const v = CLOUDV[c.v], w = c.w * P[2], h = w / v.aspect; if (P[0] + w / 2 < 0 || P[0] - w / 2 > W || P[1] - h > H || P[1] < 0) return
+  X.globalAlpha = 0.75; X.drawImage(v.base, P[0] - w / 2, P[1] - h, w, h)
+  X.globalAlpha = 0.1 + sunUp * 0.6; X.globalCompositeOperation = 'lighter'; X.drawImage(v.rim, P[0] - w / 2, P[1] - h, w, h)
+  X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'
+}
+function drawTree(tr) {
+  if (tr.only !== undefined && tr.only !== cam.shot) return
+  const P = proj(tr.x, 0, tr.z); if (!P) return
+  const v = VARS[tr.v], h = tr.h * P[2], w = h * v.aspect
+  if (P[0] + w < 0 || P[0] - w > W || P[1] - h > H || h < 1) return
+  const bend = windBend(tr.x, tr.z, T) + (T > 9.4 && T < 15 ? Math.sin(T * 40 + tr.ph) * 0.004 * (T < 12.6 ? 1 : 0.5) : 0) + Math.sin(T * 0.6 + tr.ph) * 0.006
+  X.save(); X.translate(P[0], P[1] + h * 0.012); X.transform(1, 0, -bend, 1, 0, 0)
+  const fa = fogA(P[3])
+  const blur = P[3] < 45 ? (45 - P[3]) / 6 : 0
+  if (blur > 0.5) X.filter = `blur(${blur.toFixed(1)}px)`
+  X.drawImage(v.base, -w / 2, -h, w, h)
+  const ra = sunUp * (1 - fa * 0.7) * 0.7
+  if (ra > 0.02) { X.globalAlpha = ra; X.globalCompositeOperation = 'lighter'; X.drawImage(v.rim, -w / 2, -h, w, h); X.globalCompositeOperation = 'source-over' }
+  X.globalAlpha = fa * 0.92; X.drawImage(v.fog, -w / 2, -h, w, h)
+  X.filter = 'none'; X.restore(); X.globalAlpha = 1
+}
+function drawTuft(o) {
+  const P = proj(o.x, 0, o.z); if (!P) return
+  const h = o.h * P[2]; if (h < 0.8 || P[0] < -h * 2 || P[0] > W + h * 2 || P[1] - h > H) return
+  const fa = fogA(P[3]), col = mixc(o.c, hex(FOGC), fa * 0.92)
+  const bend = windBend(o.x, o.z, T) * 2.5 + Math.sin(T * 1.4 + o.ph) * 0.08
+  X.strokeStyle = rgb(col); X.lineWidth = Math.max(0.6, h * 0.07); X.lineCap = 'round'; X.beginPath()
+  for (let i = 0; i < o.n; i++) { const s = (i / (o.n - 1 || 1) - 0.5) * 2, bx = P[0] + s * h * 0.25, tx = bx + s * h * 0.45 + bend * h; X.moveTo(bx, P[1]); X.quadraticCurveTo(bx + s * h * 0.1, P[1] - h * 0.6, tx, P[1] - h * (0.85 + 0.15 * Math.cos(s))) }
+  X.stroke()
+  if (h > 6 && sunUp > 0.2) { X.strokeStyle = rgb(hex(RIM), (sunUp - 0.2) * 0.35 * (1 - fa)); X.lineWidth *= 0.5; X.stroke() }
+  if (o.fl && h > 2) { X.fillStyle = rgb(mixc(hex(o.fl), hex(FOGC), fa)); X.beginPath(); X.arc(P[0] + h * 0.2 + bend * h, P[1] - h * 0.8, Math.max(0.6, h * 0.08), 0, Math.PI * 2); X.fill() }
+}
+function drawMist(o) {
+  const P = proj(o.x + T * o.v * 3, o.y, o.z); if (!P) return
+  const w = o.w * P[2], h = o.hh * P[2]; if (P[0] + w < 0 || P[0] - w > W) return
+  X.globalAlpha = o.a * clamp(P[3] / 60, 0, 1) * mix(1, 0.6, sunUp)
+  X.drawImage(SOFT, P[0] - w / 2, P[1] - h / 2, w, h); X.globalAlpha = 1
+}
+function drawFern(o) {
+  const P = proj(o.x, 0, o.z); if (!P) return
+  const v = FERNS[o.f], h = o.h * P[2], w = h * v.aspect; if (P[0] + w < 0 || P[0] - w > W) return
+  X.save(); X.translate(P[0], P[1] + h * 0.06); X.transform(1, 0, Math.sin(T * 0.9 + o.x) * 0.03, 1, 0, 0); X.drawImage(v.base, -w / 2, -h, w, h); X.restore()
+}
+let knightXf = null, knightP = null
+function drawKnight() {
+  const F = flight(T), P = proj(F.x, F.y, F.z); if (!P) return
+  const tc = Math.floor(T * 12) / 12, p = params(tc), sc = P[2] * U
+  LW = clamp(1.0 + sc * 0.5, 1.0, 3.2) / sc; BJ = 0.45 / sc
+  const sunK = clamp(sunUp * 1.3 - 0.15, 0, 1) * 0.9 + (cam.shot === 1 ? 0.6 * ease(seg(T, 7.0, 8.0)) : 0)
+  X.save(); X.translate(P[0], P[1]); X.scale(-sc, sc)
+  knightXf = X.getTransform(); knightP = p
+  knight(X, p, tc, Math.min(1, sunK))
+  // the bird that lands on his helmet (close-up)
+  if (T > 5.6 && T < 10.6) {
+    const G = geo(p), u = -0.32, lx = u * G.hw * 0.95, ly = domeY(G, u) - 2, [qx, qy] = rot(lx, ly, G.tilt)
+    const land = ease(seg(tc, 5.7, 6.9)), off = tc > 9.45 ? tc - 9.45 : 0
+    const bx = mix(qx - 260, qx, land) - off * 120, by = mix(qy - 160, qy, Math.sqrt(land)) - off * 150 - off * off * 40
+    const flying = land < 1 || off > 0, hop = !flying && Math.floor(tc * 12) % 30 < 3 ? -3 : 0
+    X.save(); X.translate(bx, by + hop); X.scale(-1, 1); bird(X, 0, 0, 0.6, flying ? tc * 34 : -0.3, Math.floor(tc * 2) % 3 === 0 ? -1 : 0.5); X.restore()
+  }
+  X.restore()
+}
+function drawMound() {
+  const P = proj(0, 0, KZ); if (!P) return
+  const sc = P[2] * U; seed = 808
+  X.save(); X.translate(P[0], P[1]); X.scale(sc, sc)
+  const fa = fogA(P[3]), col = mixc(hex('#2c3d2c'), hex(FOGC), fa * 0.9), dirt = mixc(hex('#3a2c22'), hex(FOGC), fa * 0.85)
+  const rise = seg(T, 12.8, 15)
+  // a low lip of earth and grass around him, its lower edge melting into the ground
+  const lip = (c, w0, hgt, jit) => {
+    const g = X.createLinearGradient(0, -hgt, 0, 8); g.addColorStop(0, rgb(c)); g.addColorStop(0.7, rgb(c)); g.addColorStop(1, rgb(c, 0))
+    X.fillStyle = g; X.beginPath(); X.moveTo(-w0, 8); for (let x = -w0; x <= w0; x += 8) X.lineTo(x, -hgt * Math.pow(Math.sin((x + w0) / (2 * w0) * Math.PI), 0.6) + r(-jit, jit)); X.lineTo(w0, 8); X.closePath(); X.fill()
+  }
+  if (rise > 0) lip(dirt, 120, 6 + 8 * rise, 2)
+  lip(col, 165, 5 - 2 * rise, 1.5)
+  X.strokeStyle = rgb(mixc(col, [80, 105, 64], 0.5)); X.lineWidth = 1.4; X.beginPath()
+  for (let i = 0; i < 90; i++) { const x = r(-160, 160), y = 3 - 4 * Math.sin((x + 165) / 330 * Math.PI); X.moveTo(x, y); X.quadraticCurveTo(x + 1, y - 5, x + r(-4, 4), y - r(6, 14)) }
+  X.stroke()
+  // dust billowing out of the ground while he pulls free
+  const dust = seg(T, 12.8, 13.6) * (1 - seg(T, 15.5, 17.2))
+  if (dust > 0) for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI, rr2 = 120 + (T - 12.8) * 30 + r(0, 40); X.globalAlpha = 0.25 * dust; X.drawImage(SOFT, Math.cos(a) * rr2 * 1.4 - 70, -r(10, 60) - (T - 12.8) * 8 - 35, 140 + (T - 12.8) * 30, 70) }
+  X.globalAlpha = 1; X.restore()
+}
+function drawFlock(b) {
+  const s = Math.floor(T * 12) / 12 - b.t0; if (s < 0) return
+  const P = proj(b.x + b.vx * s, b.y + b.vy * s + 2 * s * s, b.z + b.vz * s); if (!P) return
+  const w = b.s * P[2], fl = Math.sin(s * 22 + b.ph)
+  X.strokeStyle = rgb(mixc([30, 28, 36], hex(FOGC), fogA(P[3]) * 0.5)); X.lineWidth = Math.max(0.7, w * 0.18); X.beginPath()
+  X.moveTo(P[0] - w, P[1] - fl * w * 0.6); X.quadraticCurveTo(P[0] - w * 0.4, P[1] - w * 0.2, P[0], P[1]); X.quadraticCurveTo(P[0] + w * 0.4, P[1] - w * 0.2, P[0] + w, P[1] - fl * w * 0.6); X.stroke()
+}
+function drawRingSeg(i) {
+  const R = ringR(T), n = 48, a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2, fade = 1 - seg(T, 18.6, 21.5)
+  const A = proj(Math.cos(a0) * R, 2, KZ + Math.sin(a0) * R), B = proj(Math.cos(a1) * R, 2, KZ + Math.sin(a1) * R); if (!A || !B) return
+  X.strokeStyle = `rgba(255,246,225,${0.6 * fade})`; X.lineWidth = Math.max(1.5, 9 * A[2]); X.lineCap = 'round'; X.beginPath(); X.moveTo(A[0], A[1]); X.lineTo(B[0], B[1]); X.stroke()
+  X.globalAlpha = 0.22 * fade; const w = 80 * A[2], h = 40 * A[2] * (0.6 + 0.4 * fade); X.drawImage(SOFT, A[0] - w / 2, A[1] - h * 0.75, w, h); X.globalAlpha = 1
+}
+const RINGSEG = Array.from({ length: 48 }, (_, i) => i)
+
+// ---------------------------------------------------------------- one frame of the film at time t (seconds)
+const SUNK = [[0, 0], [5.2, 0.08], [7, 0.24], [10, 0.34], [12.6, 0.45], [17.4, 0.7], [21, 0.9], [25, 1]]
+function draw(t) {
+  T = t; cam = camAt(t); sunUp = keys(t, SUNK); fogDist = mix(420, 950, sunUp)
+  boil = Math.floor(t * 12)
+  X.setTransform(S, 0, 0, S, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'; X.imageSmoothingQuality = 'high'
+  drawSky()
+  for (const c of CLOUDS) if (c.z > 2000) drawCloud(c)
+  drawBand(BANDS[0])
+  drawGround()
+  // everything else, far to near
+  const list = []
+  for (const c of CLOUDS) if (c.z <= 2000) list.push([c.z, drawCloud, c])
+  list.push([BANDS[1].z, drawBand, BANDS[1]], [BANDS[2].z, drawBand, BANDS[2]])
+  for (const tr of TREES) list.push([tr.z, drawTree, tr])
+  for (const o of TUFTS) list.push([o.z, drawTuft, o])
+  for (const o of MIST) list.push([o.z, drawMist, o])
+  if (cam.shot === 0) for (const o of FG) list.push([o.z, drawFern, o])
+  if (cam.shot === 2) for (const b of FLOCK) list.push([b.z + b.vz * Math.max(0, t - b.t0), drawFlock, b])
+  if (t > RING0 && t < 21.5) for (const i of RINGSEG) list.push([KZ + Math.sin((i + 0.5) / 48 * Math.PI * 2) * ringR(t), drawRingSeg, i])
+  list.push([flight(t).z, drawKnight, null], [KZ - 20, drawMound, null])
+  list.sort((a, b) => b[0] - a[0])
+  knightXf = null
+  for (const [, fn, o] of list) fn(o)
+  grade(t)
+  glowPass(t)
+  leaves(t)
+  finish(t)
+}
+function grade(t) {
+  X.setTransform(1, 0, 0, 1, 0, 0)
+  const u = sunUp, e = cam.ex
+  // night-blue darkness that lifts into warm morning
+  const tint = mixc([116, 130, 178], [255, 248, 236], ease(clamp(u * 1.1, 0, 1))).map((v) => v * e)
+  X.globalCompositeOperation = 'multiply'; X.fillStyle = rgb(tint); X.fillRect(0, 0, C.width, C.height)
+  X.globalCompositeOperation = 'soft-light'; X.fillStyle = `rgba(255,175,95,${0.3 * u})`; X.fillRect(0, 0, C.width, C.height)
+  const [sx, sy] = sunPos()
+  X.globalCompositeOperation = 'screen'
+  const g = X.createRadialGradient(sx * S, sy * S, 0, sx * S, sy * S, W * S * 0.75); g.addColorStop(0, `rgba(255,214,150,${0.55 * seg(u, 0.1, 0.6)})`); g.addColorStop(0.35, `rgba(255,180,120,${0.18 * seg(u, 0.1, 0.6)})`); g.addColorStop(1, 'rgba(255,170,110,0)')
+  X.fillStyle = g; X.fillRect(0, 0, C.width, C.height)
+  if (cam.shot === 4) { X.fillStyle = `rgba(255,200,130,${0.22 * seg(T, 19.5, 22.5)})`; X.fillRect(0, 0, C.width, C.height) }
+  X.globalCompositeOperation = 'source-over'
+}
+const [RC, RG] = cnv(W / 4, H / 4)
+function glowPass(t) {
+  X.setTransform(S, 0, 0, S, 0, 0)
+  const u = sunUp, [sx, sy] = sunPos()
+  // shafts of light fanning out from the low sun through the mist. Drawn small and blurred, then stretched: soft edges
+  RG.setTransform(1, 0, 0, 1, 0, 0); RG.clearRect(0, 0, RC.width, RC.height); RG.setTransform(RC.width / W, 0, 0, RC.height / H, 0, 0)
+  const rays = seg(u, 0.12, 0.4) * (cam.shot === 4 ? 1 - 0.5 * seg(t, 20, 23) : 1)
+  if (rays > 0) {
+    seed = 31
+    for (let i = 0; i < 11; i++) {
+      const a = Math.PI * r(0.55, 1.32), wdt = r(0.015, 0.05), L = r(700, 1300), fl = 0.55 + 0.45 * Math.sin(t * r(0.3, 0.8) + i)
+      const g = RG.createRadialGradient(sx, sy, 10, sx, sy, L); g.addColorStop(0, `rgba(255,226,170,${0.5 * rays * fl})`); g.addColorStop(0.4, `rgba(255,214,160,${0.2 * rays * fl})`); g.addColorStop(1, 'rgba(255,210,160,0)')
+      RG.fillStyle = g; RG.beginPath(); RG.moveTo(sx, sy); RG.lineTo(sx + Math.cos(a - wdt) * L, sy + Math.sin(a - wdt) * L); RG.lineTo(sx + Math.cos(a + wdt) * L, sy + Math.sin(a + wdt) * L); RG.closePath(); RG.fill()
+    }
+  }
+  // the first ray finding his helmet
+  if (cam.shot === 1 && knightXf) {
+    const k = ease(seg(t, 6.6, 7.6))
+    const G = geo(knightP), q = new DOMMatrix(knightXf).transformPoint(new DOMPoint(0, domeY(G, 0) + 30)), px = q.x / S, py = q.y / S
+    const g = RG.createLinearGradient(W * 1.05, -H * 0.2, px, py)
+    g.addColorStop(0, 'rgba(255,230,170,0)'); g.addColorStop(0.4, `rgba(255,226,160,${0.4 * k})`); g.addColorStop(1, `rgba(255,220,150,${0.16 * k})`)
+    RG.fillStyle = g; RG.beginPath(); RG.moveTo(W * 0.92, -H * 0.3); RG.lineTo(W * 1.2, -H * 0.1); RG.lineTo(px + 40, py + 180); RG.lineTo(px - 260, py + 40); RG.closePath(); RG.fill()
+  }
+  RG.setTransform(1, 0, 0, 1, 0, 0); RG.filter = 'blur(5px)'; RG.globalCompositeOperation = 'copy'; RG.drawImage(RC, 0, 0); RG.filter = 'none'; RG.globalCompositeOperation = 'source-over'
+  X.globalCompositeOperation = 'screen'; X.drawImage(RC, 0, 0, W, H)
+  const sv = seg(u, 0.14, 0.3)
+  if (sv > 0) { const b = X.createRadialGradient(sx, sy, 0, sx, sy, 70); b.addColorStop(0, `rgba(255,252,236,${sv})`); b.addColorStop(0.16, `rgba(255,240,200,${0.8 * sv})`); b.addColorStop(0.4, `rgba(255,200,140,${0.25 * sv})`); b.addColorStop(1, 'rgba(255,190,130,0)'); X.fillStyle = b; X.fillRect(sx - 70, sy - 70, 140, 140) }
+  X.globalCompositeOperation = 'source-over'
+  if (knightXf && knightP) { X.save(); X.setTransform(knightXf); knightGlow(X, knightP, t); X.restore() }
+  // trail of light and mist behind the launch
+  if (t > 18.4) {
+    X.globalCompositeOperation = 'lighter'
+    const pts = []; for (let i = 0; i <= 70; i++) { const tt = mix(18.4, t - 0.06, i / 70), F = flight(tt), P = proj(F.x, F.y - 1, F.z); if (P) pts.push([P[0], P[1], P[2], tt]) }
+    for (const [wm, al, col, mn] of [[16, 0.08, '255,214,150', 10], [6, 0.2, '255,236,200', 4], [1.8, 0.8, '210,250,255', 1.4]]) {
+      for (let i = 1; i < pts.length; i++) {
+        const age = t - pts[i][3], fade = Math.exp(-age * 0.35) * (i / pts.length)
+        X.strokeStyle = `rgba(${col},${al * fade})`; X.lineWidth = Math.min(mn * 3, Math.max(mn, wm * pts[i][2])) * (0.35 + 0.65 * i / pts.length); X.lineCap = 'round'
+        X.beginPath(); X.moveTo(pts[i - 1][0], pts[i - 1][1]); X.lineTo(pts[i][0], pts[i][1]); X.stroke()
+      }
+    }
+    // glint at his chest while flying
+    const F = flight(t), P = proj(F.x, F.y - 1, F.z)
+    if (P) { const rr2 = 8 + 6 * P[2]; const g = X.createRadialGradient(P[0], P[1], 0, P[0], P[1], rr2); g.addColorStop(0, 'rgba(220,255,255,0.9)'); g.addColorStop(0.2, 'rgba(140,230,255,0.35)'); g.addColorStop(1, 'rgba(140,230,255,0)'); X.fillStyle = g; X.fillRect(P[0] - rr2, P[1] - rr2, rr2 * 2, rr2 * 2) }
+    X.globalCompositeOperation = 'source-over'
+    // mist left along the path, spreading
+    for (let i = 0; i < pts.length; i += 3) { const age = t - pts[i][3], w = (20 + age * 22) * pts[i][2] * 1.4; X.globalAlpha = 0.16 * Math.exp(-age * 0.25); X.drawImage(SOFT, pts[i][0] - w / 2 + age * 6, pts[i][1] - w * 0.25, w, w * 0.5) }
+    X.globalAlpha = 1
+  }
+}
+const LEAVES = []
+seed = 8080
+for (let i = 0; i < 70; i++) LEAVES.push({ x: r(-0.1, 1.1), y: r(-1.2, 0.2), z: r(0.5, 1.8), ph: r(0, 6), sp: r(0.5, 1.2), c: pick(['#e7b24c', '#d98a3a', '#f2d27a', '#9fbf5a', '#c96a2e']) })
+function leaves(t) {
+  if (t < 18.5) return
+  const k = t - 18.5, fadeIn = seg(t, 18.5, 19.6)
+  X.setTransform(S, 0, 0, S, 0, 0)
+  for (const l of LEAVES) {
+    const s = 6 * l.z, sp = 26 * l.z * l.sp
+    let x = (l.x * W + Math.sin(k * 0.9 * l.sp + l.ph) * 60 * l.z + k * 18 * l.z) % (W + 60), y = l.y * H + k * sp + Math.cos(k * 1.3 + l.ph) * 12
+    y = ((y % (H * 1.4)) + H * 1.4) % (H * 1.4) - H * 0.2
+    const spin = k * 3 * l.sp + l.ph, flat = Math.abs(Math.cos(spin))
+    X.save(); X.translate(x, y); X.rotate(spin * 0.5); X.globalAlpha = fadeIn * (l.z > 1.2 ? 0.7 : 0.95)
+    if (l.z > 1.3) X.filter = 'blur(2px)'
+    const wd = s * 0.42 * (0.25 + flat)
+    X.fillStyle = l.c; X.beginPath(); X.moveTo(-s, 0); X.quadraticCurveTo(0, -wd * 1.6, s, 0); X.quadraticCurveTo(0, wd * 1.6, -s, 0); X.fill()
+    X.strokeStyle = `rgba(255,236,180,${0.55 * flat})`; X.lineWidth = 0.6; X.beginPath(); X.moveTo(-s * 0.9, 0); X.lineTo(s * 0.9, 0); X.stroke()
+    X.filter = 'none'; X.restore()
+  }
+  X.globalAlpha = 1
+}
+function finish(t) {
+  X.setTransform(1, 0, 0, 1, 0, 0)
+  const v = X.createRadialGradient(C.width / 2, C.height * 0.5, C.height * 0.45, C.width / 2, C.height * 0.5, C.width * 0.62)
+  const va = 0.55 - 0.25 * seg(t, 19.5, 22.5); v.addColorStop(0, 'rgba(8,8,16,0)'); v.addColorStop(1, `rgba(8,8,16,${va})`)
+  X.fillStyle = v; X.fillRect(0, 0, C.width, C.height)
+  X.globalAlpha = 0.045; seed = Math.floor(t * 12) + 1
+  for (let i = 0; i < 260; i++) { X.fillStyle = rand() < 0.5 ? '#000' : '#fff'; X.fillRect(rand() * C.width, rand() * C.height, 2, 2) }
+  X.globalAlpha = 1
+  // dip to black between shots is not used; only fade in and out of the film
+  const fade = Math.max(1 - seg(t, 0, 1.8), seg(t, LENGTH - 1.2, LENGTH))
+  if (fade > 0) { X.fillStyle = `rgba(5,6,10,${fade})`; X.fillRect(0, 0, C.width, C.height) }
+}
+
+window.__draw = draw
+window.__length = LENGTH
+window.loadingFilm = { draw: draw, length: LENGTH }
+})();
+</script>
+<script src="index.js"></script>
+        <script>
+            const GODOT_CONFIG = Object.assign({"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":6050176,"index.wasm":28084007},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4}, { persistentPaths: [] })
+            const ENGINE = new Engine(GODOT_CONFIG)
+            const CANVAS = document.getElementById('canvas')
+
+            let bridgeScript = null
+            let bridgeTimeout = null
+            let bridgeLoaded = false
+
+            function addLocalBridge() {
+                if (bridgeLoaded) return
+                bridgeLoaded = true
+                clearTimeout(bridgeTimeout)
+
+                if (bridgeScript && bridgeScript.parentNode) {
+                    bridgeScript.onload = null
+                    bridgeScript.onerror = null
+                    bridgeScript.parentNode.removeChild(bridgeScript)
+                }
+
+                window.bridge = null
+                window.playgamaBridge = null
+
+                const scriptElement = document.createElement('script')
+                scriptElement.src = './playgama-bridge.js'
+                scriptElement.onload = function() {
+                    initializeBridge()
+                }
+                document.body.appendChild(scriptElement)
+            }
+
+            bridgeScript = document.createElement('script')
+            bridgeScript.src = 'https://bridge.playgama.com/v2/stable/playgama-bridge.js'
+            bridgeScript.onload = initializeBridge
+            bridgeScript.onerror = addLocalBridge
+
+            bridgeTimeout = setTimeout(() => {
+                console.warn('CDN bridge failed to load within 2 seconds, loading local bridge')
+                addLocalBridge()
+            }, 2000)
+
+            document.head.appendChild(bridgeScript)
+
+            function initializeBridge() {
+                clearTimeout(bridgeTimeout)
+                bridge.engine = 'godot-4'
+                // Off Playgama (the hub page) Bridge runs as its mock platform; if it ever fails or hangs, the game
+                // still starts after 5 s (no save from Playgama, the local one is used).
+                const ready = Promise.race([bridge.initialize(), new Promise((done) => setTimeout(done, 5000))])
+                    .then(() => Promise.race([bridge.storage.get('mythic_drop', false), new Promise((done) => setTimeout(() => done(null), 3000))])).catch(() => null)
+                ready.then((saved) => {
+                    window.__mythicSave = typeof saved === 'string' ? saved : ''
+                    try { setLoaderLanguage(bridge.platform.language) } catch (e) {}
+                    try { bridge.setGameLoadingProgress(0) } catch (e) {}
+                    ENGINE.startGame({
+                        onProgress: function (current, total) {
+                            try { bridge.setGameLoadingProgress((current / total) * 100) } catch (e) {}
+                            setLoaderProgress(current, total)
+                        },
+                    }).then(() => {
+                        CANVAS.focus()
+                        setTimeout(() => window.hideLoader(), LOADER_GIVE_UP_MSEC)
+                    });
+                })
+            }
+        </script>
+
+    </body>
+</html>                                                                                                                                                  
