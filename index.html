@@ -92,6 +92,9 @@ const G = [
   { id: 'gulp', url: 'rp5hg7v2xbxrec', name: 'Gulp Town', tag: 'up', g: 'smash', hero: 1,
     ko: ['구멍 하나로 마을을 통째로', '작은 구멍이 커지며 장난감 방 · 해저 마을 · 공룡 정글까지 10곳을 삼킨다.'],
     en: ['Swallow the whole town', 'A tiny hole grows until it eats 10 towns: toy room, undersea, dino jungle and more.'] },
+  { id: 'snow', url: 'rdtskf6x3lowde', name: 'Snowball Bear', tag: 'new', g: 'arcade', hero: 1,
+    ko: ['눈덩이 굴려 마을에서 제일 큰 눈사람', '꼬마 북극곰 뭉치의 눈 오는 밤. 판마다 작은 이야기, 여섯 판.'],
+    en: ['Roll the biggest snowman in town', "Little polar bear Puff's snowy night. Six stages, a small story in each."] },
   { id: 'squeeze', url: '6ucj7qs4r2pgpw', name: 'Squeeze Lift', tag: 'new', g: 'puzzle', hero: 1,
     ko: ['문 닫히기 전에 다 태워', '스모 선수도 피아노도 소도, 엘리베이터에 꽉꽉 밀어 넣기.'],
     en: ['Cram them in before the doors close', 'Sumo wrestlers, pianos, cows: squeeze everyone into the lift.'] },
@@ -102,8 +105,8 @@ const G = [
     ko: ['영웅 여섯, 하늘 다섯 곳', '손가락 하나로 날며 쏘는 세로 슈팅. 보스 앞에서 지원군 호출.'], en: ['Six heroes, five skies', 'A vertical shooter you fly with one finger. Call backup at the boss.'] },
   { id: 'bumpy', url: '2wv7rvomm4jnra', name: 'Bumpy Delivery', tag: '', g: 'arcade',
     ko: ['결혼식 5분 전, 케이크 배달', '흔들리는 트럭으로 3단 케이크를 지켜라. 길 10개.'], en: ['Wedding in 5 minutes', 'Keep a 3-tier cake on a wobbly truck across 10 roads.'] },
-  { id: 'mythic', url: 'd7iuylpphlv6wb', name: 'Mythic Drop', tag: '', g: 'action',
-    ko: ['몹으로 꽉 찬 화면, 디아블로식 장비', '무기 21개 · 세트 장비 · 각성. 화면이 전부 터진다.'], en: ['Screens full of monsters, Diablo-style loot', '21 weapons, set items, awakenings.'] },
+  { id: 'mythic', url: 'd7iuylpphlv6wb', name: 'Mythic Drop', tag: 'up', g: 'action',
+    ko: ['몹으로 꽉 찬 화면, 디아블로식 장비', '주우면 바로 입는 장비 · 캐릭터 32명 · 세트 장비. 화면이 전부 터진다.'], en: ['Screens full of monsters, Diablo-style loot', 'Gear you wear as you grab it, 32 heroes, set items.'] },
   { id: 'swarm', url: '33snqmhvxssrfx', name: 'Hero Swarm', tag: '', g: 'action',
     ko: ['문을 골라 영웅 군단 키우기', '좋은 문을 고르면 군단이 불어난다.'], en: ['Pick the gates, grow the swarm', 'Choose the right gates and your army explodes.'] },
   { id: 'random', url: 'zfcdzajva7jixb', name: 'Random Defense', tag: '', g: 'defense',
@@ -146,7 +149,7 @@ if (!LANGS[lang]) lang = 'en'
 const U = () => UI[lang]
 const txt = (g) => g[lang] || (X[lang] && X[lang][g.id] ? [X[lang][g.id][0], X[lang][g.id][1] || X[lang][g.id][0]] : g.en)
 const gname = (k) => U().g[GKEYS.indexOf(k)]
-const href = (g) => `https://playgama.ai/play/${g.url}`
+const href = (g) => g.path || `https://playgama.ai/play/${g.url}`
 function render() {
   document.documentElement.lang = lang
   document.getElementById('langName').textContent = LANGS[lang]
